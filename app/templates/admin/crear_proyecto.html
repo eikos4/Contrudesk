@@ -1,0 +1,129 @@
+{% extends "layout.html" %}
+
+{% block content %}
+  <div class="container max-w-4xl mx-auto mt-10 bg-white p-8 rounded-lg shadow-lg">
+    <h2 class="text-3xl font-semibold text-center text-gray-800 mb-6">Crear Proyecto</h2>
+
+    <form method="POST" enctype="multipart/form-data">
+      {{ form.hidden_tag() }}
+      
+      <div class="space-y-6">
+
+        <!-- Nombre del Proyecto -->
+        <div class="form-group">
+          <label for="name" class="block text-sm font-medium text-gray-700">Nombre del Proyecto</label>
+          {{ form.name(class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-black") }}
+          {% for error in form.name.errors %}
+            <div class="text-sm text-red-500">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <!-- Descripción -->
+        <div class="form-group">
+          <label for="description" class="block text-sm font-medium text-gray-700">Descripción</label>
+          {{ form.description(class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-black") }}
+          {% for error in form.description.errors %}
+            <div class="text-sm text-red-500">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <!-- Fecha de Inicio -->
+        <div class="form-group">
+          <label for="start_date" class="block text-sm font-medium text-gray-700">Fecha de Inicio</label>
+          {{ form.start_date(class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-black") }}
+          {% for error in form.start_date.errors %}
+            <div class="text-sm text-red-500">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <!-- Fecha de Fin -->
+        <div class="form-group">
+          <label for="end_date" class="block text-sm font-medium text-gray-700">Fecha de Fin</label>
+          {{ form.end_date(class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-black") }}
+          {% for error in form.end_date.errors %}
+            <div class="text-sm text-red-500">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <!-- Progreso -->
+        <div class="form-group">
+          <label for="progress" class="block text-sm font-medium text-gray-700">Progreso (%)</label>
+          {{ form.progress(class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-black") }}
+          {% for error in form.progress.errors %}
+            <div class="text-sm text-red-500">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <!-- Estado -->
+        <div class="form-group">
+          <label for="status" class="block text-sm font-medium text-gray-700">Estado</label>
+          {{ form.status(class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-black") }}
+          {% for error in form.status.errors %}
+            <div class="text-sm text-red-500">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <!-- Comentario del Administrador -->
+        <div class="form-group">
+          <label for="admin_comment" class="block text-sm font-medium text-gray-700">Comentario del Administrador</label>
+          {{ form.admin_comment(class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-black") }}
+          {% for error in form.admin_comment.errors %}
+            <div class="text-sm text-red-500">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <!-- 💰 Presupuesto Total (en CLP) -->
+        <div class="form-group">
+          <label for="total_budget_clp" class="block text-sm font-medium text-gray-700">Presupuesto Total (CLP)</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">$</span>
+            {{ form.total_budget(class="pl-8 mt-1 block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 text-black", placeholder="Ej. 25000000") }}
+          </div>
+          {% for error in form.total_budget.errors %}
+            <div class="text-sm text-red-500">{{ error }}</div>
+          {% endfor %}
+          <p class="text-xs text-gray-500 mt-1">Ingresa el monto total en pesos chilenos (sin puntos ni comas).</p>
+        </div>
+
+        <!-- 📄 Archivo de Presupuesto -->
+        <div class="form-group">
+          <label for="budget_file" class="block text-sm font-medium text-gray-700">Archivo de Presupuesto (PDF o Excel)</label>
+          {{ form.budget_file(class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 text-black") }}
+          {% for error in form.budget_file.errors %}
+            <div class="text-sm text-red-500">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <!-- 🗓️ Archivo de Cronograma -->
+        <div class="form-group">
+          <label for="schedule_file" class="block text-sm font-medium text-gray-700">Archivo de Cronograma (PDF o Excel)</label>
+          {{ form.schedule_file(class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500 text-black") }}
+          {% for error in form.schedule_file.errors %}
+            <div class="text-sm text-red-500">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <!-- Botón de envío -->
+        <div class="text-center">
+          <button type="submit" class="w-full bg-[#1e3a8a] text-white py-3 px-6 rounded-lg font-semibold hover:bg-[#1e40af] focus:outline-none focus:ring-4 focus:ring-blue-500 transition duration-300">
+            Guardar Proyecto
+          </button>
+        </div>
+
+      </div>
+    </form>
+  </div>
+
+  <!-- 💅 Script para formatear el campo de presupuesto CLP -->
+  <script>
+    const budgetInput = document.querySelector('input[name="total_budget"]');
+    if (budgetInput) {
+      budgetInput.addEventListener('input', () => {
+        let value = budgetInput.value.replace(/\D/g, ''); // elimina todo lo que no sea número
+        if (value) {
+          budgetInput.value = new Intl.NumberFormat('es-CL').format(value);
+        }
+      });
+    }
+  </script>
+{% endblock %}

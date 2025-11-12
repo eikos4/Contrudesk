@@ -1,0 +1,157 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="min-h-screen py-8">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-[95%]">
+    <div class="bg-white rounded-3xl shadow-xl p-6 sm:p-8 lg:p-10">
+
+      <button id="helpButton"
+        class="fixed bottom-6 right-6 bg-blue-600 text-white w-12 h-12 rounded-full shadow-lg z-50 hover:bg-blue-700 flex items-center justify-center text-2xl font-bold">
+        ?
+      </button>
+
+      <!-- Panel lateral (Ayuda) -->
+      <div id="helpPanel" class="fixed inset-0 bg-gray-900/40 hidden z-40">
+        <div id="helpContent"
+          class="absolute right-0 top-0 h-full w-3/4 sm:w-1/2 md:w-1/3 bg-white shadow-xl transform translate-x-full transition-transform duration-300">
+          <div class="flex justify-between items-center p-4 border-b">
+            <h2 class="text-lg font-semibold">Manual del módulo</h2>
+            <button id="closeHelp" class="text-gray-500 hover:text-gray-700 text-xl font-bold">&times;</button>
+          </div>
+          <div class="p-4 h-[calc(100%-3rem)] overflow-y-auto">
+            <iframe src="{{ url_for('static', filename='manuales/documentos.pdf') }}" 
+                    class="w-full h-full border-none rounded-lg"></iframe>
+          </div>
+        </div>
+      </div>
+
+      <script>
+        const helpButton = document.getElementById('helpButton');
+        const helpPanel = document.getElementById('helpPanel');
+        const helpContent = document.getElementById('helpContent');
+        const closeHelp = document.getElementById('closeHelp');
+
+        helpButton.addEventListener('click', () => {
+          helpPanel.classList.remove('hidden');
+          setTimeout(() => helpContent.classList.remove('translate-x-full'), 10);
+        });
+
+        closeHelp.addEventListener('click', () => {
+          helpContent.classList.add('translate-x-full');
+          setTimeout(() => helpPanel.classList.add('hidden'), 300);
+        });
+
+        helpPanel.addEventListener('click', (e) => {
+          if (e.target === helpPanel) {
+            helpContent.classList.add('translate-x-full');
+            setTimeout(() => helpPanel.classList.add('hidden'), 300);
+          }
+        });
+      </script>
+
+      
+      <!-- Header Section -->
+      <div class="mb-8 pb-6 border-b border-gray-200">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="p-3 bg-blue-600 rounded-xl">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+          </div>
+          <h1 class="text-3xl font-bold text-gray-900">Gestión de Documentos y Planos</h1>
+        </div>
+        <p class="text-gray-600 ml-16">Administra los documentos y tareas de tus proyectos</p>
+      </div>
+
+
+      <!-- Projects Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for project in projects %}
+          <div class="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-200 group">
+            
+            <!-- Header Card minimalista -->
+            <div class="p-6 border-b border-gray-100">
+              <div class="flex items-start justify-between mb-3">
+                <div class="flex-1">
+                  <h3 class="text-xl font-bold text-gray-900 mb-1 line-clamp-2">{{ project.name }}</h3>
+                  <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full
+                    {{ 'bg-green-100 text-green-700' if project.status == 'activo' else 'bg-gray-100 text-gray-600' }}">
+                    <span class="w-1.5 h-1.5 rounded-full {{ 'bg-green-500' if project.status == 'activo' else 'bg-gray-400' }}"></span>
+                    {{ project.status|capitalize }}
+                  </span>
+                </div>
+                <div class="p-2 bg-gray-50 rounded-lg">
+                  <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <!-- Content Card -->
+            <div class="p-6">
+              <!-- Descripción -->
+              <div class="mb-5">
+                <p class="text-gray-600 text-sm leading-relaxed line-clamp-3">
+                  {{ project.description[:100] }}{% if project.description|length > 100 %}...{% endif %}
+                </p>
+              </div>
+
+              <!-- Fechas minimalistas -->
+              <div class="space-y-3 mb-6">
+                <div class="flex items-center gap-3 text-sm">
+                  <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                  </svg>
+                  <span class="text-gray-500">Inicio:</span>
+                  <span class="text-gray-900 font-semibold ml-auto">{{ project.start_date.strftime('%d/%m/%Y') }}</span>
+                </div>
+                
+                <div class="flex items-center gap-3 text-sm">
+                  <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                  </svg>
+                  <span class="text-gray-500">Fin:</span>
+                  <span class="text-gray-900 font-semibold ml-auto">
+                    {% if project.end_date %}
+                      {{ project.end_date.strftime('%d/%m/%Y') }}
+                    {% else %}
+                      <span class="text-gray-400 italic">Sin definir</span>
+                    {% endif %}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Botones de acción minimalistas -->
+              <div class="grid grid-cols-2 gap-3">
+                <a href="{{ url_for('lector.view_documents', project_id=project.id) }}" 
+                   class="inline-flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-all duration-200">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                  </svg>
+                  <span>Documentos</span>
+                </a>
+              </div>
+            </div>
+
+          </div>
+        {% endfor %}
+      </div>
+
+      <!-- Estado vacío -->
+      {% if not projects %}
+      <div class="text-center py-16">
+        <div class="inline-flex items-center justify-center w-20 h-20 bg-gray-100 rounded-full mb-6">
+          <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+          </svg>
+        </div>
+        <h3 class="text-2xl font-bold text-gray-900 mb-3">No hay proyectos disponibles</h3>
+        <p class="text-gray-500 max-w-md mx-auto">Los proyectos aparecerán aquí una vez que sean creados.</p>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+{% endblock %}

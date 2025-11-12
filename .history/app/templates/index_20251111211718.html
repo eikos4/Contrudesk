@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ConstruDesk - Control total, construcción real</title>
+  <!-- Favicons -->
+  <link rel="icon" type="image/png" sizes="96x96" href="{{ url_for('static', filename='favicon/favicon-96x96.png') }}">
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon/favicon.svg') }}">
+  <link rel="shortcut icon" href="{{ url_for('static', filename='favicon/favicon.ico') }}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='favicon/apple-touch-icon.png') }}">
+  <link rel="manifest" href="{{ url_for('static', filename='favicon/site.webmanifest') }}">
+  <meta name="theme-color" content="#1e40af">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
+
+
+   <style>
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-20px); }
+    }
+    @keyframes moveGradient {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    @keyframes blob {
+      0%, 100% { border-radius: 60% 40% 30% 70%/60% 30% 70% 40%; }
+      50% { border-radius: 40% 60% 70% 30%/50% 60% 30% 70%; }
+    }
+    .animate-blob {
+      animation: blob 10s ease-in-out infinite;
+    }
+    .animate-gradient {
+      background-size: 200% 200%;
+      animation: moveGradient 8s ease infinite;
+    }
+    .animate-float {
+      animation: float 4s ease-in-out infinite;
+    }
+  </style>
+
+
+
+
+
+<script>
+  let deferredPrompt;
+
+  // Crear botón para instalar PWA
+  const btnInstall = document.createElement("button");
+  btnInstall.innerHTML = "📲 Instalar ConstruDesk";
+  btnInstall.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #1e40af;
+    color: white;
+    padding: 12px 18px;
+    border-radius: 10px;
+    border: none;
+    font-weight: bold;
+    z-index: 9999;
+    cursor: pointer;
+    display: none;
+  `;
+  document.body.appendChild(btnInstall);
+
+  // Capturar evento PWA
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    btnInstall.style.display = "block";
+  });
+
+  // Click del botón
+  btnInstall.addEventListener("click", async () => {
+    btnInstall.style.display = "none";
+    deferredPrompt.prompt();
+    const result = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+  });
+
+  // Registrar Service Worker
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/static/service-worker.js")
+      .then(() => console.log("Service Worker registrado ✅"))
+      .catch((err) => console.log("Error SW ❌", err));
+  }
+</script>
+
+  
+
+
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#1e40af',
+            secondary: '#3b82f6',
+            accent: '#60a5fa',
+            light: '#dbeafe',
+            softer: '#eff6ff'
+          },
+          animation: {
+            'fade-in': 'fadeIn 1s ease-out',
+            'slide-up': 'slideUp 0.8s ease-out',
+            'slide-right': 'slideRight 0.8s ease-out',
+            'float': 'float 3s ease-in-out infinite',
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'bounce-slow': 'bounce 2s infinite'
+          },
+          keyframes: {
+            fadeIn: {
+              '0%': { opacity: '0', transform: 'translateY(20px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' }
+            },
+            slideUp: {
+              '0%': { opacity: '0', transform: 'translateY(50px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' }
+            },
+            slideRight: {
+              '0%': { opacity: '0', transform: 'translateX(-50px)' },
+              '100%': { opacity: '1', transform: 'translateX(0)' }
+            },
+            float: {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-20px)' }
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    .gradient-animate {
+      background-size: 200% 200%;
+      animation: gradientShift 8s ease infinite;
+    }
+    .perspective-card {
+      perspective: 1000px;
+    }
+    .card-3d:hover {
+      transform: rotateY(5deg) rotateX(5deg);
+    }
+    .nav-blur {
+      backdrop-filter: none;
+      -webkit-backdrop-filter: blur(12px);
+    }
+  </style>
+
+  !-- 🔹 Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- 🔹 Animaciones personalizadas -->
+  <style>
+    @keyframes float {0%,100%{transform:translateY(0)}50%{transform:translateY(-20px)}}
+    @keyframes moveGradient {0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+    @keyframes blob {0%,100%{border-radius:60% 40% 30% 70%/60% 30% 70% 40%}50%{border-radius:40% 60% 70% 30%/50% 60% 30% 70%}}
+    .animate-blob{animation:blob 12s ease-in-out infinite}
+    .animate-gradient{background-size:200% 200%;animation:moveGradient 10s ease infinite}
+    .animate-float{animation:float 5s ease-in-out infinite}
+  </style>
+</head>
+
+
+
+<body class="font-sans antialiased text-gray-800 overflow-x-hidden">
+
+  <!-- 🔹 NAVBAR -->
+   <!-- 🔹 NAVBAR -->
+  <nav id="navbar" class="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md shadow-md transition-all duration-500">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10">
+      <div class="flex justify-between items-center h-16 sm:h-20">
+
+        <!-- Logo -->
+        <h1 class="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent animate-pulse">
+          ConstruDesk
+        </h1>
+
+        <!-- Menú móvil -->
+        <button id="menu-btn" aria-label="Abrir menú" class="md:hidden text-primary hover:scale-110 transition">
+          <svg id="menu-icon" class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+
+        <!-- Menú escritorio -->
+        <ul id="menu" class="hidden md:flex items-center space-x-8 font-medium text-gray-700">
+          <li><a href="#beneficios" class="hover:text-secondary transition">Beneficios</a></li>
+          <li><a href="#funcionalidades" class="hover:text-secondary transition">Funcionalidades</a></li>
+          <li><a href="#demos" class="hover:text-secondary transition">Demo</a></li>
+          <li>
+            <a href="https://api.whatsapp.com/send/?phone=56920576206"
+               class="bg-gradient-to-r from-primary to-secondary text-white px-5 py-2 rounded-full hover:scale-105 hover:shadow-lg transition">
+              Contacto Ventas
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Menú móvil desplegable -->
+      <div id="mobile-menu" class="hidden flex-col bg-white rounded-lg shadow-lg mt-2 overflow-hidden md:hidden">
+        <ul class="text-center py-4 space-y-3 text-gray-800">
+          <li><a href="#beneficios" class="block py-2 hover:text-secondary">Beneficios</a></li>
+          <li><a href="#funcionalidades" class="block py-2 hover:text-secondary">Funcionalidades</a></li>
+          <li><a href="#demos" class="block py-2 hover:text-secondary">Demo</a></li>
+          <li><a href="#contacto" class="block py-2 hover:text-secondary">Contacto</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 🔸 HEADER / HERO -->
+<header 
+  class="relative flex flex-col justify-center items-center text-center 
+         min-h-screen w-full overflow-hidden 
+         bg-gradient-to-br from-primary via-secondary to-accent text-white
+         pt-28 sm:pt-32 md:pt-24 lg:pt-20">
+
+    <!-- Fondos animados -->
+    <div class="absolute inset-0">
+      <div class="absolute inset-0 bg-gradient-to-tr from-primary/80 via-secondary/60 to-accent/50 animate-gradient"></div>
+      <div class="absolute -top-32 left-10 w-64 h-64 bg-white/10 blur-3xl animate-blob"></div>
+      <div class="absolute top-1/2 -left-24 w-72 h-72 bg-accent/20 blur-3xl animate-blob" style="animation-delay:3s;"></div>
+      <div class="absolute bottom-0 right-10 w-80 h-80 bg-white/10 blur-3xl animate-blob" style="animation-delay:6s;"></div>
+    </div>
+
+    <!-- Contenido -->
+    <div class="relative z-10 max-w-6xl mx-auto px-6 sm:px-10 lg:px-16 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+      
+      <!-- Texto -->
+      <div class="space-y-6 md:text-left text-center animate-fade-in">
+        <span class="inline-block bg-white/20 text-white px-5 py-2 rounded-full text-sm font-semibold backdrop-blur-sm">
+          🚀 Plataforma Tecnológica para la Construcción
+        </span>
+
+        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight break-words">
+          <span class="block text-transparent bg-clip-text bg-gradient-to-r from-white to-accent">ConstruDesk::</span>
+          <span class="block text-transparent bg-clip-text bg-gradient-to-r from-accent via-white to-light">
+            🏗️ La nueva era de la gestión constructiva
+          </span>
+        </h1>
+
+        <p class="text-base sm:text-lg lg:text-xl text-white/80 max-w-md mx-auto md:mx-0">
+          Impulsa tu constructora con una plataforma que combina control total, automatización y resultados medibles.
+        </p>
+
+        <div class="flex flex-col sm:flex-row justify-center md:justify-start gap-4 pt-4">
+          <a href="#demos" 
+             class="inline-block bg-white text-primary px-8 py-3 rounded-full font-bold hover:bg-light hover:scale-105 hover:shadow-2xl transition">
+             🚀 INGRESAR
+          </a>
+          <a href="#funcionalidades" 
+             class="inline-block border-2 border-white/80 text-white px-8 py-3 rounded-full font-bold hover:bg-white/10 hover:scale-105 transition">
+             ⚙️ Ver Funcionalidades
+          </a>
+        </div>
+      </div>
+
+      <!-- Imagen -->
+      <div class="relative flex justify-center md:justify-end mt-8 md:mt-0">
+        <div class="absolute inset-0 bg-white/10 blur-3xl rounded-full animate-pulse"></div>
+        <img src="static/plataformas/construdesk.png" 
+             alt="Logo ConstruDesk"
+             class="relative z-10 w-52 sm:w-72 md:w-96 lg:w-[28rem] drop-shadow-[0_0_30px_rgba(255,255,255,0.4)] hover:scale-110 transition-transform duration-700">
+      </div>
+    </div>
+  </header>
+
+
+  <!-- Scripts -->
+  <script>
+    const menuBtn = document.getElementById("menu-btn");
+    const mobileMenu = document.getElementById("mobile-menu");
+    menuBtn.addEventListener("click", () => {
+      mobileMenu.classList.toggle("hidden");
+    });
+
+    window.addEventListener("scroll", () => {
+      const nav = document.getElementById("navbar");
+      if (window.scrollY > 50) {
+        nav.classList.add("shadow-xl", "bg-white/95");
+      } else {
+        nav.classList.remove("shadow-xl", "bg-white/95");
+      }
+    });
+  </script>
+ 
+
+  <!-- SCRIPT -->
+  <script>
+    const btn = document.getElementById('menu-btn');
+    const mobileMenu = document.getElementById('mobile-menu');
+    const menuIcon = document.getElementById('menu-icon');
+
+    btn.addEventListener('click', () => {
+      mobileMenu.classList.toggle('hidden');
+      menuIcon.classList.toggle('rotate-90');
+    });
+
+    window.addEventListener('scroll', () => {
+      const navbar = document.getElementById('navbar');
+      if (window.scrollY > 50) {
+        navbar.classList.add('shadow-2xl');
+        navbar.classList.remove('shadow-lg');
+      } else {
+        navbar.classList.add('shadow-lg');
+        navbar.classList.remove('shadow-2xl');
+      }
+    });
+
+    // Scroll suave
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function(e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          mobileMenu.classList.add('hidden');
+        }
+      });
+    });
+  </script>
+</body>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <section id="beneficios" class="py-20 sm:py-28 bg-gradient-to-b from-white to-softer relative overflow-hidden">
+    <div class="absolute inset-0 opacity-5">
+      <div class="absolute top-0 left-1/4 w-96 h-96 bg-secondary rounded-full blur-3xl"></div>
+      <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-accent rounded-full blur-3xl"></div>
+    </div>
+
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 relative">
+      <div class="text-center mb-16 animate-slide-up">
+        <span class="inline-block bg-light text-secondary px-6 py-2 rounded-full text-sm font-semibold mb-4 animate-pulse-slow">
+          🧱¿Por qué ConstruDesk?
+        </span>
+        <h3 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-primary mb-6">
+          Beneficios de ConstruDesk
+        </h3>
+        <p class="text-base sm:text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
+          Optimiza tus proyectos con control total, comunicación fluida y datos en tiempo real para tomar mejores decisiones.
+        </p>
+      </div>
+
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+        <div class="perspective-card group">
+          <div class="card-3d bg-white hover:bg-gradient-to-br hover:from-light hover:to-white rounded-2xl p-8 shadow-md hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-3 cursor-pointer">
+            <div class="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-6 bg-gradient-to-br from-light to-accent rounded-full flex items-center justify-center group-hover:scale-110 group-hover:rotate-12 transition-all duration-500">
+              <img src="static/plataformas/construdesk.png" alt="Dashboard" class="w-10 sm:w-12">
+            </div>
+            <h4 class="font-bold text-xl sm:text-2xl mb-3 text-primary group-hover:text-secondary transition-colors duration-300">Visión Global</h4>
+            <p class="text-gray-600 leading-relaxed">Monitorea todas tus obras con indicadores claros y actualizados al instante.</p>
+            <div class="mt-4 h-1 w-0 group-hover:w-full bg-gradient-to-r from-primary to-secondary transition-all duration-500 rounded-full"></div>
+          </div>
+        </div>
+
+        <div class="perspective-card group" style="animation-delay: 0.1s;">
+          <div class="card-3d bg-white hover:bg-gradient-to-br hover:from-light hover:to-white rounded-2xl p-8 shadow-md hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-3 cursor-pointer">
+            <div class="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-6 bg-gradient-to-br from-light to-accent rounded-full flex items-center justify-center group-hover:scale-110 group-hover:rotate-12 transition-all duration-500">
+              <img src="static/plataformas/construdesk.png" alt="Colaboración" class="w-10 sm:w-12">
+            </div>
+            <h4 class="font-bold text-xl sm:text-2xl mb-3 text-primary group-hover:text-secondary transition-colors duration-300">Colaboración</h4>
+            <p class="text-gray-600 leading-relaxed">Admins, residentes y maestros conectados en un solo ecosistema digital.</p>
+            <div class="mt-4 h-1 w-0 group-hover:w-full bg-gradient-to-r from-primary to-secondary transition-all duration-500 rounded-full"></div>
+          </div>
+        </div>
+
+        <div class="perspective-card group" style="animation-delay: 0.2s;">
+          <div class="card-3d bg-white hover:bg-gradient-to-br hover:from-light hover:to-white rounded-2xl p-8 shadow-md hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-3 cursor-pointer">
+            <div class="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-6 bg-gradient-to-br from-light to-accent rounded-full flex items-center justify-center group-hover:scale-110 group-hover:rotate-12 transition-all duration-500">
+              <img src="static/plataformas/construdesk.png" alt="Reportes" class="w-10 sm:w-12">
+            </div>
+            <h4 class="font-bold text-xl sm:text-2xl mb-3 text-primary group-hover:text-secondary transition-colors duration-300">Reportes Automáticos</h4>
+            <p class="text-gray-600 leading-relaxed">Genera informes profesionales listos para clientes y gerencia en segundos.</p>
+            <div class="mt-4 h-1 w-0 group-hover:w-full bg-gradient-to-r from-primary to-secondary transition-all duration-500 rounded-full"></div>
+          </div>
+        </div>
+
+        <div class="perspective-card group" style="animation-delay: 0.3s;">
+          <div class="card-3d bg-white hover:bg-gradient-to-br hover:from-light hover:to-white rounded-2xl p-8 shadow-md hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-3 cursor-pointer">
+            <div class="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-6 bg-gradient-to-br from-light to-accent rounded-full flex items-center justify-center group-hover:scale-110 group-hover:rotate-12 transition-all duration-500">
+              <img src="static/plataformas/construdesk.png" alt="Seguridad" class="w-10 sm:w-12">
+            </div>
+            <h4 class="font-bold text-xl sm:text-2xl mb-3 text-primary group-hover:text-secondary transition-colors duration-300">Transparencia</h4>
+            <p class="text-gray-600 leading-relaxed">Evidencias y bitácoras digitales accesibles desde cualquier dispositivo, siempre.</p>
+            <div class="mt-4 h-1 w-0 group-hover:w-full bg-gradient-to-r from-primary to-secondary transition-all duration-500 rounded-full"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="py-20 bg-gradient-to-r from-primary via-secondary to-primary text-white relative overflow-hidden gradient-animate">
+    <div class="absolute inset-0 opacity-10">
+      <div class="absolute top-0 left-1/4 w-96 h-96 bg-white rounded-full blur-3xl animate-float"></div>
+      <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-accent rounded-full blur-3xl animate-float" style="animation-delay: 1s;"></div>
+    </div>
+
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div class="text-center group cursor-pointer transform transition-all duration-500 hover:scale-110">
+          <div class="mb-4 flex justify-center">
+            <div class="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center group-hover:bg-white/30 transition-all duration-500 group-hover:rotate-12">
+              <span class="text-4xl">🏗️</span>
+            </div>
+          </div>
+          <div id="stat1" class="text-5xl sm:text-6xl font-extrabold mb-2">0+</div>
+          <p class="text-light text-lg font-medium">Proyectos Gestionados</p>
+        </div>
+
+        <div class="text-center group cursor-pointer transform transition-all duration-500 hover:scale-110">
+          <div class="mb-4 flex justify-center">
+            <div class="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center group-hover:bg-white/30 transition-all duration-500 group-hover:rotate-12">
+              <span class="text-4xl">⭐</span>
+            </div>
+          </div>
+          <div id="stat2" class="text-5xl sm:text-6xl font-extrabold mb-2">0%</div>
+          <p class="text-light text-lg font-medium">Satisfacción Cliente</p>
+        </div>
+
+        <div class="text-center group cursor-pointer transform transition-all duration-500 hover:scale-110">
+          <div class="mb-4 flex justify-center">
+            <div class="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center group-hover:bg-white/30 transition-all duration-500 group-hover:rotate-12">
+              <span class="text-4xl">👷</span>
+            </div>
+          </div>
+          <div id="stat3" class="text-5xl sm:text-6xl font-extrabold mb-2">0+</div>
+          <p class="text-light text-lg font-medium">Equipos Activos</p>
+        </div>
+
+        <div class="text-center group cursor-pointer transform transition-all duration-500 hover:scale-110">
+          <div class="mb-4 flex justify-center">
+            <div class="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center group-hover:bg-white/30 transition-all duration-500 group-hover:rotate-12">
+              <span class="text-4xl">🔒</span>
+            </div>
+          </div>
+          <div id="stat4" class="text-5xl sm:text-6xl font-extrabold mb-2">0/7</div>
+          <p class="text-light text-lg font-medium">Soporte Disponible</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="funcionalidades" class="py-20 sm:py-28 bg-white relative overflow-hidden">
+    <div class="absolute inset-0 opacity-5">
+      <div class="absolute top-1/4 right-0 w-96 h-96 bg-primary rounded-full blur-3xl"></div>
+      <div class="absolute bottom-1/4 left-0 w-96 h-96 bg-secondary rounded-full blur-3xl"></div>
+    </div>
+
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 relative">
+      <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+        <div class="order-2 lg:order-1">
+          <span class="inline-block bg-light text-secondary px-6 py-2 rounded-full text-sm font-semibold mb-6 animate-pulse-slow">
+            ⚡Potencia total
+          </span>
+          <h3 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-primary mb-8">
+            📱Funcionalidades Clave
+          </h3>
+          <div class="space-y-4">
+            <div class="flex items-start space-x-4 p-5 rounded-xl hover:bg-softer transition-all duration-500 cursor-pointer group transform hover:translate-x-2">
+              <div class="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-primary to-secondary rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg">
+                <span class="text-white text-xl font-bold">1</span>
+              </div>
+              <div>
+                <h4 class="font-bold text-lg sm:text-xl text-gray-800 mb-2 group-hover:text-secondary transition-colors duration-300">Dashboard Global</h4>
+                <p class="text-gray-600">Avances físicos y financieros en tiempo real con visualizaciones intuitivas y gráficos interactivos.</p>
+              </div>
+            </div>
+
+            <div class="flex items-start space-x-4 p-5 rounded-xl hover:bg-softer transition-all duration-500 cursor-pointer group transform hover:translate-x-2">
+              <div class="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-primary to-secondary rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg">
+                <span class="text-white text-xl font-bold">2</span>
+              </div>
+              <div>
+                <h4 class="font-bold text-lg sm:text-xl text-gray-800 mb-2 group-hover:text-secondary transition-colors duration-300">Gestión de Obras</h4>
+                <p class="text-gray-600">Cronogramas inteligentes y validación automática de residentes en obra con alertas proactivas.</p>
+              </div>
+            </div>
+
+            <div class="flex items-start space-x-4 p-5 rounded-xl hover:bg-softer transition-all duration-500 cursor-pointer group transform hover:translate-x-2">
+              <div class="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-primary to-secondary rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg">
+                <span class="text-white text-xl font-bold">3</span>
+              </div>
+              <div>
+                <h4 class="font-bold text-lg sm:text-xl text-gray-800 mb-2 group-hover:text-secondary transition-colors duration-300">Bitácora Digital</h4>
+                <p class="text-gray-600">Registro de avances, fotografías y consumos directamente desde el campo con geolocalización.</p>
+              </div>
+            </div>
+
+            <div class="flex items-start space-x-4 p-5 rounded-xl hover:bg-softer transition-all duration-500 cursor-pointer group transform hover:translate-x-2">
+              <div class="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-primary to-secondary rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg">
+                <span class="text-white text-xl font-bold">4</span>
+              </div>
+              <div>
+                <h4 class="font-bold text-lg sm:text-xl text-gray-800 mb-2 group-hover:text-secondary transition-colors duration-300">Control de Materiales</h4>
+                <p class="text-gray-600">Inventario actualizado automáticamente con alertas de consumo predictivas y optimización de compras.</p>
+              </div>
+            </div>
+
+            <div class="flex items-start space-x-4 p-5 rounded-xl hover:bg-softer transition-all duration-500 cursor-pointer group transform hover:translate-x-2">
+              <div class="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-primary to-secondary rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg">
+                <span class="text-white text-xl font-bold">5</span>
+              </div>
+              <div>
+                <h4 class="font-bold text-lg sm:text-xl text-gray-800 mb-2 group-hover:text-secondary transition-colors duration-300">Seguridad y Calidad</h4>
+                <p class="text-gray-600">Checklists HSE digitales y control normativo integrado en cada etapa del proyecto.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="order-1 lg:order-2 group">
+          <div class="relative">
+            <div class="absolute -inset-4 bg-gradient-to-r from-primary to-secondary rounded-3xl blur-2xl opacity-20 group-hover:opacity-40 transition-opacity duration-500"></div>
+            <img src="static/plataformas/construdesk.png" 
+                 alt="Funcionalidades ContruDesk" 
+                 class="relative rounded-3xl shadow-2xl hover:shadow-3xl transition-all duration-500 w-full transform group-hover:scale-105 group-hover:rotate-1">
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+<!-- 
+<section class="py-20 sm:py-28 bg-gradient-to-b from-softer to-white relative overflow-hidden">
+  <div class="absolute inset-0 opacity-5">
+    <div class="absolute top-1/4 left-0 w-96 h-96 bg-primary rounded-full blur-3xl"></div>
+    <div class="absolute bottom-1/4 right-0 w-96 h-96 bg-secondary rounded-full blur-3xl"></div>
+  </div>
+
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 relative">
+    <div class="text-center mb-16">
+      <span class="inline-block bg-light text-secondary px-6 py-2 rounded-full text-sm font-semibold mb-4 animate-pulse-slow">
+        🤝Lo que dicen nuestros clientes
+      </span>
+      <h3 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-primary mb-6">
+        Testimonios que Inspiran
+      </h3>
+      <p class="text-base sm:text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
+        Constructoras que han transformado su gestión con ContruDesk.
+      </p>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-8">
+      <div class="group perspective-card">
+        <div class="card-3d bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border-t-4 border-secondary">
+          <div class="flex items-center mb-6">
+            <div class="w-16 h-16 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center text-white text-2xl font-bold mr-4 group-hover:scale-110 transition-transform duration-500">
+              JR
+            </div>
+            <div>
+              <h4 class="font-bold text-lg text-gray-800">Juan Rodríguez</h4>
+              <p class="text-sm text-gray-500">Director General</p>
+            </div>
+          </div>
+          <div class="mb-4 text-yellow-400 text-2xl">⭐⭐⭐⭐⭐</div>
+          <p class="text-gray-600 leading-relaxed italic">"ContruDesk revolucionó nuestra forma de trabajar. Ahora tenemos visibilidad completa de todas nuestras obras en tiempo real."</p>
+        </div>
+      </div>
+
+      <div class="group perspective-card" style="animation-delay: 0.1s;">
+        <div class="card-3d bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border-t-4 border-accent">
+          <div class="flex items-center mb-6">
+            <div class="w-16 h-16 bg-gradient-to-br from-secondary to-accent rounded-full flex items-center justify-center text-white text-2xl font-bold mr-4 group-hover:scale-110 transition-transform duration-500">
+              MP
+            </div>
+            <div>
+              <h4 class="font-bold text-lg text-gray-800">María Pérez</h4>
+              <p class="text-sm text-gray-500">Gerente de Proyectos</p>
+            </div>
+          </div>
+          <div class="mb-4 text-yellow-400 text-2xl">⭐⭐⭐⭐⭐</div>
+          <p class="text-gray-600 leading-relaxed italic">"La coordinación entre equipos mejoró increíblemente. Los reportes automáticos nos ahorran horas cada semana."</p>
+        </div>
+      </div>
+
+      <div class="group perspective-card" style="animation-delay: 0.2s;">
+        <div class="card-3d bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border-t-4 border-primary">
+          <div class="flex items-center mb-6">
+            <div class="w-16 h-16 bg-gradient-to-br from-accent to-primary rounded-full flex items-center justify-center text-white text-2xl font-bold mr-4 group-hover:scale-110 transition-transform duration-500">
+              CS
+            </div>
+            <div>
+              <h4 class="font-bold text-lg text-gray-800">Carlos Silva</h4>
+              <p class="text-sm text-gray-500">Residente de Obra</p>
+            </div>
+          </div>
+          <div class="mb-4 text-yellow-400 text-2xl">⭐⭐⭐⭐⭐</div>
+          <p class="text-gray-600 leading-relaxed italic">"Desde el campo puedo registrar todo al instante. La app es súper intuitiva y funciona incluso sin internet."</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+-->
+
+ 
+
+  <section id="demos" class="py-20 sm:py-28 bg-gradient-to-br from-primary via-secondary to-primary text-white text-center relative overflow-hidden gradient-animate">
+    <div class="absolute inset-0 opacity-10">
+      <div class="absolute top-10 left-10 w-72 h-72 bg-white rounded-full blur-3xl animate-float"></div>
+      <div class="absolute top-1/2 right-20 w-96 h-96 bg-white rounded-full blur-3xl animate-float" style="animation-delay: 1s;"></div>
+      <div class="absolute bottom-10 left-1/3 w-80 h-80 bg-accent rounded-full blur-3xl animate-float" style="animation-delay: 2s;"></div>
+    </div>
+
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <span class="inline-block bg-white/20 text-white px-6 py-2 rounded-full text-sm font-semibold mb-6 animate-pulse-slow backdrop-blur-sm">
+        Ver para creer
+      </span>
+      <h3 class="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6 animate-slide-up">
+        Mira ConstruDesk en acción
+      </h3>
+      <p class="text-base sm:text-lg lg:text-xl mb-16 max-w-3xl mx-auto leading-relaxed text-light animate-slide-up" style="animation-delay: 0.2s;">
+        Descubre cómo nuestra plataforma revoluciona la gestión de proyectos de construcción con herramientas potentes e intuitivas.
+      </p>
+
+      <div class="max-w-4xl mx-auto mb-12 animate-slide-up" style="animation-delay: 0.4s;">
+        <div class="relative group perspective-card">
+          <div class="absolute -inset-2 bg-white rounded-3xl blur-2xl opacity-20 group-hover:opacity-40 transition-opacity duration-500"></div>
+          <div class="relative bg-white/10 backdrop-blur-xl p-8 sm:p-12 rounded-3xl border border-white/30 shadow-2xl transform transition-all duration-500 hover:scale-105 card-3d">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-8">
+              <div class="text-left flex-1">
+                <p class="text-2xl sm:text-3xl font-bold mb-4">¿Listo para transformar tu constructora?</p>
+                <p class="text-light text-lg">Agenda una demostración personalizada y descubre todas las funcionalidades que harán crecer tu negocio.</p>
+              </div>
+              <div class="flex-shrink-0">
+                <div class="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center animate-pulse-slow">
+                  <span class="text-6xl">🏗️</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <a href="{{ url_for('auth.login') }}" 
+         class="inline-block bg-white text-primary px-10 sm:px-14 py-5 sm:py-6 rounded-full font-bold text-base sm:text-lg hover:bg-light hover:shadow-2xl transform hover:-translate-y-3 hover:scale-110 transition-all duration-500 animate-bounce-slow">
+        ✨INGRESO EMPRESAS CONSTRUDESK
+      </a>
+    </div>
+  </section>
+
+
+
+<section id="plataformas" class="py-20 bg-gradient-to-br from-softer via-white to-light relative overflow-hidden">
+  <div class="absolute inset-0 opacity-5">
+    <div class="absolute top-1/4 left-0 w-96 h-96 bg-primary rounded-full blur-3xl"></div>
+    <div class="absolute bottom-1/4 right-0 w-96 h-96 bg-secondary rounded-full blur-3xl"></div>
+  </div>
+
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 relative text-center">
+    <span class="inline-block bg-light text-secondary px-6 py-2 rounded-full text-sm font-semibold mb-4 animate-pulse-slow">
+      🚀Ecosistema Kodesk
+    </span>
+    <h3 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-primary mb-6">
+      ⚡Conoce nuestras plataformas⚡
+    </h3>
+    <p class="text-base sm:text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed mb-12">
+      Kodesk conecta tecnología y productividad en múltiples industrias. Descubre nuestras soluciones digitales.
+    </p>
+
+    <div class="grid sm:grid-cols-2 lg:grid-cols-5 gap-6 sm:gap-8">
+      <!-- Plataforma 1 -->
+      <div class="group bg-white rounded-2xl shadow-md hover:shadow-2xl p-6 transform hover:-translate-y-2 transition-all duration-500 cursor-pointer">
+        <img src="static/plataformas/construdesk.png" alt="ConstruDesk" class="w-24 h-24 mx-auto mb-4 object-contain group-hover:scale-110 transition-transform duration-500">
+        <h4 class="font-bold text-xl text-primary mb-2">ConstruDesk</h4>
+        <p class="text-gray-500 text-sm">Gestión de proyectos de construcción.</p>
+      </div>
+
+      <!-- Plataforma 2 -->
+      <div class="group bg-white rounded-2xl shadow-md hover:shadow-2xl p-6 transform hover:-translate-y-2 transition-all duration-500 cursor-pointer">
+        <img src="static/plataformas/agrodesk.png" alt="AgroDesk" class="w-24 h-24 mx-auto mb-4 object-contain group-hover:scale-110 transition-transform duration-500">
+        <h4 class="font-bold text-xl text-primary mb-2">AgroDesk</h4>
+        <p class="text-gray-500 text-sm">Tecnología para la gestión agrícola.</p>
+      </div>
+
+      <!-- Plataforma 3 -->
+      <div class="group bg-white rounded-2xl shadow-md hover:shadow-2xl p-6 transform hover:-translate-y-2 transition-all duration-500 cursor-pointer">
+        <img src="static/plataformas/avidesk.png" alt="AviDESK" class="w-24 h-24 mx-auto mb-4 object-contain group-hover:scale-110 transition-transform duration-500">
+        <h4 class="font-bold text-xl text-primary mb-2">AviDesk</h4>
+        <p class="text-gray-500 text-sm">Soluciones para avicolas.</p>
+      </div>
+
+      <!-- Plataforma 4 -->
+      <div class="group bg-white rounded-2xl shadow-md hover:shadow-2xl p-6 transform hover:-translate-y-2 transition-all duration-500 cursor-pointer">
+        <img src="static/plataformas/leucode.png" alt="HealthDesk" class="w-24 h-24 mx-auto mb-4 object-contain group-hover:scale-110 transition-transform duration-500">
+        <h4 class="font-bold text-xl text-primary mb-2">HealthDesk</h4>
+        <p class="text-gray-500 text-sm">Gestión médica con IA y bienestar digital.</p>
+      </div>
+
+      <!-- Plataforma 5 -->
+      <div class="group bg-white rounded-2xl shadow-md hover:shadow-2xl p-6 transform hover:-translate-y-2 transition-all duration-500 cursor-pointer">
+        <img src="static/plataformas/smartdesk.png" alt="SmartDesk" class="w-24 h-24 mx-auto mb-4 object-contain group-hover:scale-110 transition-transform duration-500">
+        <h4 class="font-bold text-xl text-primary mb-2">SmartDesk</h4>
+        <p class="text-gray-500 text-sm">Automatización y productividad empresarial.</p>
+      </div>
+    </div>
+
+    <div class="mt-12">
+      <a href="https://kodesk.cl" 
+         class="inline-block bg-gradient-to-r from-primary to-secondary text-white px-10 py-4 rounded-full font-bold text-lg hover:shadow-xl transform hover:-translate-y-2 hover:scale-105 transition-all duration-500">
+        🌐 Visitar Kodesk.cl
+      </a>
+    </div>
+  </div>
+</section>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <section id="contacto" class="relative py-20 sm:py-28 text-white overflow-hidden">
+    <video autoplay muted loop playsinline class="absolute inset-0 w-full h-full object-cover scale-110">
+      <source src="static/gruas.mp4" type="video/mp4">
+    </video>
+    <div class="absolute inset-0 bg-gradient-to-br from-primary/90 via-secondary/85 to-primary/90 gradient-animate"></div>
+
+    <div class="absolute inset-0 opacity-10">
+      <div class="absolute top-20 left-20 w-96 h-96 bg-white rounded-full blur-3xl animate-float"></div>
+      <div class="absolute bottom-20 right-20 w-96 h-96 bg-accent rounded-full blur-3xl animate-float" style="animation-delay: 1.5s;"></div>
+    </div>
+
+    <div class="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid lg:grid-cols-2 gap-12 items-start">
+        
+        <div class="animate-slide-right">
+          <span class="inline-block bg-white/20 text-white px-6 py-2 rounded-full text-sm font-semibold mb-6 backdrop-blur-sm">
+            🧰Estamos aquí para ti
+          </span>
+          <h2 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold mb-6">
+            👷Conversemos sobre tu proyecto
+          </h2>
+          <p class="text-base sm:text-lg text-light mb-10 leading-relaxed">
+            Cuéntanos sobre tu constructora y te mostraremos cómo <strong>ConstruDesk</strong> puede darte control total y optimizar cada proceso de tu negocio.
+          </p>
+          <div class="space-y-5">
+            <div class="flex items-center space-x-4 group cursor-pointer transform transition-all duration-300 hover:translate-x-2">
+              <div class="flex-shrink-0 w-14 h-14 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-2xl group-hover:scale-110 group-hover:bg-white/30 transition-all duration-300">📧</div>
+              <div>
+                <p class="font-semibold text-sm text-light">Email</p>
+                <p class="text-lg">construdesk.ia@gmail.com</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <form method="POST" action="{{ url_for('main.contacto') }}" 
+              class="bg-white/15 backdrop-blur-xl p-6 sm:p-10 rounded-3xl border border-white/30 shadow-2xl transform transition-all duration-500 hover:scale-105 animate-slide-up">
+          {{ form.hidden_tag() }}
+
+          <div class="mb-5 group">
+            <label class="block mb-2 font-semibold text-white text-sm transition-all duration-300 group-focus-within:text-light">Nombre completo</label>
+            {{ form.nombre(class="w-full p-4 rounded-xl bg-white/20 border-2 border-white/30 text-white placeholder-white/60 focus:bg-white/30 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-300 transform focus:scale-105") }}
+          </div>
+
+          <div class="mb-5 group">
+            <label class="block mb-2 font-semibold text-white text-sm transition-all duration-300 group-focus-within:text-light">Correo electrónico</label>
+            {{ form.email(class="w-full p-4 rounded-xl bg-white/20 border-2 border-white/30 text-white placeholder-white/60 focus:bg-white/30 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-300 transform focus:scale-105") }}
+          </div>
+
+          <div class="mb-5 group">
+            <label class="block mb-2 font-semibold text-white text-sm transition-all duration-300 group-focus-within:text-light">Teléfono</label>
+            {{ form.telefono(class="w-full p-4 rounded-xl bg-white/20 border-2 border-white/30 text-white placeholder-white/60 focus:bg-white/30 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-300 transform focus:scale-105") }}
+          </div>
+
+          <div class="mb-5 group">
+            <label class="block mb-2 font-semibold text-white text-sm transition-all duration-300 group-focus-within:text-light">Empresa</label>
+            {{ form.empresa(class="w-full p-4 rounded-xl bg-white/20 border-2 border-white/30 text-white placeholder-white/60 focus:bg-white/30 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-300 transform focus:scale-105") }}
+          </div>
+
+          <div class="mb-6 group">
+            <label class="block mb-2 font-semibold text-white text-sm transition-all duration-300 group-focus-within:text-light">Mensaje</label>
+            {{ form.mensaje(class="w-full p-4 rounded-xl bg-white/20 border-2 border-white/30 text-white placeholder-white/60 focus:bg-white/30 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-300 transform focus:scale-105 min-h-32 resize-none") }}
+          </div>
+
+          <button type="submit" 
+                  class="w-full bg-white text-primary px-6 py-4 rounded-xl font-bold text-lg hover:bg-light hover:shadow-2xl transform hover:-translate-y-2 hover:scale-105 transition-all duration-500 relative overflow-hidden group">
+            <span class="relative z-10 flex items-center justify-center space-x-2">
+              <span>🚀</span>
+              <span>Enviar Mensaje</span>
+            </span>
+            <div class="absolute inset-0 bg-gradient-to-r from-secondary to-accent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+          </button>
+        </form>
+
+      </div>
+    </div>
+  </section>
+
+  <footer class="bg-gradient-to-r from-primary via-secondary to-primary text-white py-12 text-center relative overflow-hidden gradient-animate">
+    <div class="absolute inset-0 opacity-5">
+      <div class="absolute top-0 left-1/4 w-64 h-64 bg-white rounded-full blur-3xl animate-float"></div>
+      <div class="absolute bottom-0 right-1/4 w-64 h-64 bg-accent rounded-full blur-3xl animate-float" style="animation-delay: 1s;"></div>
+    </div>
+    
+    <div class="container mx-auto px-4 relative z-10">
+      <div class="mb-6">
+        <h3 class="text-3xl font-bold mb-2 animate-pulse-slow">ConstruDesk</h3>
+        <p class="text-lg font-semibold text-light">Tu escritorio digital para la construcción</p>
+      </div>
+      
+      
+      
+      <div class="mt-8 flex justify-center space-x-6">
+        <a href="https://www.instagram.com/construdesk.cl/" class="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 hover:scale-110 transform transition-all duration-300">
+          <span class="text-xl">📱</span>
+        </a>
+        <a href="https://api.whatsapp.com/send/?phone=56920576206&text=Hola+Kodesk+%EF%BF%BD%2C+quiero+una+asesor%C3%ADa+para+mi+empresa.&type=phone_number&app_absent=0" class="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 hover:scale-110 transform transition-all duration-300">
+          <span class="text-xl">💼</span>
+        </a>
+        <a href="https://api.whatsapp.com/send/?phone=56920576206&text=Hola+Kodesk+%EF%BF%BD%2C+quiero+una+asesor%C3%ADa+para+mi+empresa.&type=phone_number&app_absent=0" class="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 hover:scale-110 transform transition-all duration-300">
+          <span class="text-xl">✉️</span>
+        </a>
+      </div>
+
+      <div class="border-t border-white/20 pt-6 mt-6 space-y-2">
+        <p class="text-sm text-light">BY KODESK.CL - AgroDesk - LEUCODE.IA</p>
+        <p class="text-sm font-semibold">© 2025 ConstruDesk | Todos los derechos reservados Leucode.IA®</p>
+      </div>
+    </div>
+  </footer>
+
+  <button id="scrollToTop" class="fixed bottom-8 right-8 w-14 h-14 bg-gradient-to-r from-primary to-secondary text-white rounded-full shadow-2xl hover:shadow-3xl transform hover:scale-110 transition-all duration-300 z-50 opacity-0 pointer-events-none flex items-center justify-center group">
+    <svg class="w-6 h-6 group-hover:-translate-y-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
+    </svg>
+  </button>
+
+  <div id="cursor-glow" class="fixed w-8 h-8 bg-secondary rounded-full pointer-events-none z-50 opacity-30 blur-xl transition-all duration-300 hidden lg:block"></div>
+
+  <script>
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -100px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.style.opacity = '1';
+          entry.target.style.transform = 'translateY(0)';
+        }
+      });
+    }, observerOptions);
+
+    document.querySelectorAll('section').forEach(section => {
+      section.style.opacity = '0';
+      section.style.transform = 'translateY(30px)';
+      section.style.transition = 'opacity 0.8s ease-out, transform 0.8s ease-out';
+      observer.observe(section);
+    });
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('mouseenter', function() {
+        this.style.transform = 'scale(1.05)';
+      });
+      anchor.addEventListener('mouseleave', function() {
+        this.style.transform = 'scale(1)';
+      });
+    });
+
+    let scrollPos = 0;
+    const navbar = document.getElementById('navbar');
+    const scrollToTopBtn = document.getElementById('scrollToTop');
+    
+    window.addEventListener('scroll', () => {
+      const currentScrollPos = window.pageYOffset;
+      
+      if (scrollPos > currentScrollPos || currentScrollPos < 50) {
+        navbar.style.transform = 'translateY(0)';
+      } else {
+        navbar.style.transform = 'translateY(-100%)';
+      }
+      
+      if (currentScrollPos > 500) {
+        scrollToTopBtn.style.opacity = '1';
+        scrollToTopBtn.style.pointerEvents = 'auto';
+      } else {
+        scrollToTopBtn.style.opacity = '0';
+        scrollToTopBtn.style.pointerEvents = 'none';
+      }
+      
+      scrollPos = currentScrollPos;
+    });
+
+    scrollToTopBtn.addEventListener('click', () => {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    });
+
+    const cursorGlow = document.getElementById('cursor-glow');
+    document.addEventListener('mousemove', (e) => {
+      cursorGlow.style.left = e.clientX + 'px';
+      cursorGlow.style.top = e.clientY + 'px';
+    });
+
+    document.querySelectorAll('.perspective-card').forEach(card => {
+      card.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+        
+        const rotateX = (y - centerY) / 10;
+        const rotateY = (centerX - x) / 10;
+        
+        const cardInner = card.querySelector('.card-3d');
+        if (cardInner) {
+          cardInner.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.05)`;
+        }
+      });
+      
+      card.addEventListener('mouseleave', () => {
+        const cardInner = card.querySelector('.card-3d');
+        if (cardInner) {
+          cardInner.style.transform = 'rotateX(0) rotateY(0) scale(1)';
+        }
+      });
+    });
+
+    const stats = [
+      { id: 'stat1', target: 50, suffix: '+', duration: 2000 },
+      { id: 'stat2', target: 98, suffix: '%', duration: 2000 },
+      { id: 'stat3', target: 150, suffix: '+', duration: 2000 },
+      { id: 'stat4', target: 24, suffix: '/7', duration: 2000 }
+    ];
+
+    function animateCounter(element, target, suffix, duration) {
+      const start = 0;
+      const increment = target / (duration / 16);
+      let current = start;
+      
+      const timer = setInterval(() => {
+        current += increment;
+        if (current >= target) {
+          element.textContent = target + suffix;
+          clearInterval(timer);
+        } else {
+          element.textContent = Math.floor(current) + suffix;
+        }
+      }, 16);
+    }
+
+    const statsObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && !entry.target.classList.contains('animated')) {
+          entry.target.classList.add('animated');
+          const stat = stats.find(s => s.id === entry.target.id);
+          if (stat) {
+            animateCounter(entry.target, stat.target, stat.suffix, stat.duration);
+          }
+        }
+      });
+    }, { threshold: 0.5 });
+
+    stats.forEach(stat => {
+      const element = document.getElementById(stat.id);
+      if (element) {
+        statsObserver.observe(element);
+      }
+    });
+
+    document.querySelectorAll('input, textarea').forEach(field => {
+      field.addEventListener('focus', function() {
+        this.parentElement.classList.add('scale-105');
+      });
+      field.addEventListener('blur', function() {
+        this.parentElement.classList.remove('scale-105');
+      });
+    });
+
+    let lastScroll = 0;
+    window.addEventListener('scroll', () => {
+      const header = document.querySelector('header video');
+      if (header) {
+        const scrolled = window.pageYOffset;
+        const rate = scrolled * 0.5;
+        header.style.transform = `translate3d(0, ${rate}px, 0)`;
+      }
+    });
+
+    const navLinks = document.querySelectorAll('a[href^="#"]');
+    const sections = document.querySelectorAll('section[id]');
+
+    window.addEventListener('scroll', () => {
+      let current = '';
+      sections.forEach(section => {
+        const sectionTop = section.offsetTop;
+        const sectionHeight = section.clientHeight;
+        if (pageYOffset >= sectionTop - 200) {
+          current = section.getAttribute('id');
+        }
+      });
+
+      navLinks.forEach(link => {
+        link.classList.remove('text-secondary');
+        if (link.getAttribute('href') === `#${current}`) {
+          link.classList.add('text-secondary');
+        }
+      });
+    });
+
+    const glowElements = document.querySelectorAll('.group');
+    glowElements.forEach(el => {
+      el.addEventListener('mouseenter', () => {
+        cursorGlow.style.width = '60px';
+        cursorGlow.style.height = '60px';
+        cursorGlow.style.opacity = '0.5';
+      });
+      el.addEventListener('mouseleave', () => {
+        cursorGlow.style.width = '32px';
+        cursorGlow.style.height = '32px';
+        cursorGlow.style.opacity = '0.3';
+      });
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const fadeElements = document.querySelectorAll('.animate-fade-in, .animate-slide-up, .animate-slide-right');
+      fadeElements.forEach((el, index) => {
+        el.style.animationDelay = `${index * 0.1}s`;
+      });
+    });
+  </script>
+
+
+
+
+  <script>
+    const menuBtn = document.getElementById("menu-btn");
+    const mobileMenu = document.getElementById("mobile-menu");
+    menuBtn.addEventListener("click", () => {
+      mobileMenu.classList.toggle("hidden");
+    });
+
+    window.addEventListener("scroll", () => {
+      const nav = document.getElementById("navbar");
+      if (window.scrollY > 50) nav.classList.add("shadow-xl", "bg-white/95");
+      else nav.classList.remove("shadow-xl", "bg-white/95");
+    });
+  </script>
+</body>
+</html> 
