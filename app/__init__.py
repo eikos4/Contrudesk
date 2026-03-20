@@ -16,13 +16,12 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
-    login_manager.login_view = "admin.login"
+    login_manager.login_view = "auth.login"
 
     # Ruta para almacenar los archivos
     UPLOAD_FOLDER = os.path.join(app.root_path, 'app', 'static', 'uploads')  # Ruta correcta
     app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # Limitar el tamaño de archivo a 16MB
-
 
     from .main import main
     from app.routes.admin import admin_bp
@@ -31,7 +30,8 @@ def create_app():
     from app.routes.editor import editor_bp 
     from app.routes.miembro import miembro_bp 
     from app.routes.auth import auth_bp
-    from app.routes.mensajes import mensajero_bp    
+    from app.routes.mensajes import mensajero_bp
+    from app.routes.superadmin import superadmin_bp    
 
 
 
@@ -44,6 +44,7 @@ def create_app():
     app.register_blueprint(miembro_bp)  
     app.register_blueprint(auth_bp)
     app.register_blueprint(mensajero_bp)
+    app.register_blueprint(superadmin_bp)
     
 
 

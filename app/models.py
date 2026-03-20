@@ -56,6 +56,9 @@ class AdminUser(UserMixin, db.Model):
     empresa_id = db.Column(db.Integer, db.ForeignKey('empresa.id'), nullable=False)
     empresa = db.relationship('Empresa', back_populates='usuarios')
 
+    is_active = db.Column(db.Boolean, default=True)
+
+
     roles = db.relationship('Role', secondary='user_roles', backref=db.backref('users', lazy='dynamic'))
 
     # Métodos de seguridad
@@ -386,6 +389,11 @@ class ConfigTemplate(db.Model):
     file_path = db.Column(db.String(255))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     is_active = db.Column(db.Boolean, default=True)
+
+    # 🟢 NUEVA COLUMNA DE ENLACE
+    # Asume que tu tabla de empresas se llama 'empresa'
+    empresa_id = db.Column(db.Integer, db.ForeignKey('empresa.id'), nullable=False) 
+    empresa = db.relationship('Empresa', backref='config_templates')
 
     def __repr__(self):
         return f"<ConfigTemplate {self.name}>"

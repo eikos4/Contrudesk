@@ -2,41 +2,104 @@ from asyncio import Task
 from datetime import datetime
 import os
 from zoneinfo import ZoneInfo
-from flask import Blueprint, abort, app, current_app, flash, redirect, render_template, send_from_directory, url_for
+
+from flask import (
+    Blueprint,
+    abort,
+    app,
+    current_app,
+    flash,
+    redirect,
+    render_template,
+    send_from_directory,
+    url_for,
+    request,
+)
 from flask_login import current_user, login_required
 from werkzeug.utils import secure_filename
+
 from app import db
 from app.forms import NuevoChecklistItemForm, ProgressForm
-from app.models import AdminUser, ApprovalFlow, Comment, ConfigTemplate, DailyChecklist, ProgressPhoto, Project, ProjectDocument, ProjectProgress, ProjectTask, ProjectUserRole, TechnicalReport
-from flask import request
+from app.models import (
+    AdminUser,
+    ApprovalFlow,
+    Comment,
+    ConfigTemplate,
+    DailyChecklist,
+    ProgressPhoto,
+    Project,
+    ProjectDocument,
+    ProjectProgress,
+    ProjectTask,
+    ProjectUserRole,
+    TechnicalReport,
+)
 import pytz
 
 ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'gif', 'dwg', 'dxf', 'zip'}
 
+editor_bp = Blueprint('editor', __name__, url_prefix='/editor')
+
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-editor_bp = Blueprint('editor', __name__, url_prefix='/editor')
+
+# ================================
+# 🔧 Helpers de filtrado por empresa
+# ================================
+
+def get_base_project_query_for_editor():
+    """
+    Retorna la consulta base de Proyectos filtrada por empresa del creador del proyecto.
+    """
+    empresa_id = current_user.empresa_id
+    return Project.query.join(
+        AdminUser, Project.creator_id == AdminUser.id
+    ).filter(
+        AdminUser.empresa_id == empresa_id
+    )
+
+
+def get_project_for_editor_or_redirect(project_id, fallback_endpoint='editor.editor_dashboard'):
+    """
+    Obtiene un proyecto y valida que pertenezca a la empresa del usuario.
+    Si no, muestra mensaje y redirige al endpoint indicado.
+    """
+    project = Project.query.get_or_404(project_id)
+    if project.creator.empresa_id != current_user.empresa_id:
+        flash("No tienes permiso para acceder a este proyecto.", "danger")
+        return redirect(url_for(fallback_endpoint))
+    return project
+
+
+# ================================
+# Rutas EDITOR
+# ================================
 
 # Ruta de inicio para el editor
 @editor_bp.route('/')
 @login_required
 def editor_dashboard():
-    projects = Project.query.all()  
+    projects = get_base_project_query_for_editor().all()
     return render_template('editor/editor_dashboard.html', projects=projects)
+
 
 # Ruta para subir un documento
 @editor_bp.route('/project/<int:project_id>/upload_document', methods=['GET', 'POST'])
 @login_required
 def upload_document(project_id):
-    project = Project.query.get_or_404(project_id)
+    project = get_project_for_editor_or_redirect(project_id)
+    if not isinstance(project, Project):
+        return project  # redirección
+
     if request.method == 'POST':
         file = request.files.get('file')
         description = request.form.get('description')
 
         if file:
             filename = secure_filename(file.filename)
-            file_path = os.path.join('app','static', 'uploads', filename) 
+            file_path = os.path.join('app', 'static', 'uploads', filename)
 
             # Crear el directorio si no existe
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
@@ -46,23 +109,26 @@ def upload_document(project_id):
             document = ProjectDocument(
                 project_id=project.id,
                 user_id=current_user.id,
-                file_path=file_path,  
-                file_name=filename, 
+                file_path=file_path,
+                file_name=filename,
                 description=description
             )
             db.session.add(document)
             db.session.commit()
 
             flash('Documento cargado correctamente.', 'success')
-            return redirect(url_for('editor.view_documents', project_id=project.id)) 
+            return redirect(url_for('editor.view_documents', project_id=project.id))
 
     return render_template('editor/upload_document.html', project=project)
+
 
 # Ruta para ver los documentos del proyecto
 @editor_bp.route('/project/<int:project_id>/documents', methods=['GET', 'POST'])
 @login_required
 def view_documents(project_id):
-    project = Project.query.get_or_404(project_id)
+    project = get_project_for_editor_or_redirect(project_id)
+    if not isinstance(project, Project):
+        return project
 
     documents = ProjectDocument.query.filter_by(project_id=project.id).all()
 
@@ -92,14 +158,23 @@ def view_documents(project_id):
 
     return render_template('editor/view_documents.html', project=project, documents=documents)
 
+
 # Ruta para editar el documento
 @editor_bp.route('/project/<int:project_id>/document/<int:document_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_document(project_id, document_id):
+    project = get_project_for_editor_or_redirect(project_id)
+    if not isinstance(project, Project):
+        return project
+
     document = ProjectDocument.query.get_or_404(document_id)
-    project = Project.query.get_or_404(project_id)  
+
+    # Validar que el documento pertenezca al proyecto
+    if document.project_id != project.id:
+        flash('El documento no pertenece a este proyecto.', 'danger')
+        return redirect(url_for('editor.view_documents', project_id=project.id))
+
     if request.method == 'POST':
-        
         description = request.form.get('description')
         file = request.files.get('file')
 
@@ -109,10 +184,10 @@ def edit_document(project_id, document_id):
         # Si se sube un nuevo archivo, reemplazar el anterior
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
-            file_path = os.path.join('app','static', 'uploads', filename)  
-            
+            file_path = os.path.join('app', 'static', 'uploads', filename)
+
             file.save(file_path)
-                          
+
             document.file_path = file_path
             document.file_name = filename
 
@@ -120,22 +195,27 @@ def edit_document(project_id, document_id):
         db.session.commit()
 
         flash('Documento actualizado correctamente.', 'success')
-        return redirect(url_for('editor.view_documents', project_id=project_id)) 
+        return redirect(url_for('editor.view_documents', project_id=project_id))
 
     return render_template('editor/edit_document.html', document=document, project=project)
+
 
 # Ruta para descargar el documento
 @editor_bp.route('/project/<int:project_id>/documents/<document_id>/download')
 @login_required
 def download_document(project_id, document_id):
+    project = get_project_for_editor_or_redirect(project_id)
+    if not isinstance(project, Project):
+        return project
+
     document = ProjectDocument.query.get_or_404(document_id)
 
-    if document.project_id != project_id:
+    if document.project_id != project.id:
         flash('No tienes permiso para descargar este documento.', 'danger')
         return redirect(url_for('editor.view_documents', project_id=project_id))
 
     # Recupera el nombre del archivo desde el path guardado
-    filename = os.path.basename(document.file_path) 
+    filename = os.path.basename(document.file_path)
 
     # Verificar si el archivo realmente existe
     file_path = os.path.join(current_app.root_path, 'static', 'uploads', filename)
@@ -147,11 +227,14 @@ def download_document(project_id, document_id):
         os.path.join(current_app.root_path, 'static', 'uploads'), filename, as_attachment=True
     )
 
+
 # Ruta para ver las tareas del proyecto
 @editor_bp.route('/project/<int:project_id>/tasks')
 @login_required
 def view_tasks(project_id):
-    project = Project.query.get_or_404(project_id)
+    project = get_project_for_editor_or_redirect(project_id)
+    if not isinstance(project, Project):
+        return project
 
     # Obtener las tareas del proyecto
     tasks = ProjectTask.query.filter_by(project_id=project.id).all()
@@ -163,7 +246,9 @@ def view_tasks(project_id):
 @editor_bp.route('/project/<int:project_id>/create_task', methods=['GET', 'POST'])
 @login_required
 def create_task(project_id):
-    project = Project.query.get_or_404(project_id)
+    project = get_project_for_editor_or_redirect(project_id)
+    if not isinstance(project, Project):
+        return project
 
     # Obtener los usuarios asignados al proyecto
     users_in_project = AdminUser.query.join(ProjectUserRole).filter(ProjectUserRole.project_id == project_id).all()
@@ -171,13 +256,13 @@ def create_task(project_id):
     if request.method == 'POST':
         name = request.form.get('name')
         description = request.form.get('description')
-        start_date = request.form.get('start_date')  
-        end_date = request.form.get('end_date') 
-        responsible_user_id = request.form.get('responsible_user') 
-        status = request.form.get('status', 'pendiente')  
+        start_date = request.form.get('start_date')
+        end_date = request.form.get('end_date')
+        responsible_user_id = request.form.get('responsible_user')
+        status = request.form.get('status', 'pendiente')
 
         start_date = datetime.strptime(start_date, '%Y-%m-%d')
-        end_date = datetime.strptime(end_date, '%Y-%m-%d') if end_date else None  
+        end_date = datetime.strptime(end_date, '%Y-%m-%d') if end_date else None
 
         # Crear la nueva tarea
         new_task = ProjectTask(
@@ -185,15 +270,15 @@ def create_task(project_id):
             description=description,
             start_date=start_date,
             end_date=end_date,
-            status=status,  
+            status=status,
             project_id=project.id,
-            responsible_user_id=responsible_user_id 
+            responsible_user_id=responsible_user_id
         )
 
         db.session.add(new_task)
         db.session.commit()
 
-        flash('Tarea creada exitosamente', 'success')# Redirigir a la li
+        flash('Tarea creada exitosamente', 'success')
         return redirect(url_for('editor.view_tasks', project_id=project.id))
 
     return render_template('editor/create_task.html', project=project, users_in_project=users_in_project)
@@ -203,7 +288,16 @@ def create_task(project_id):
 @editor_bp.route('/project/<int:project_id>/task/<int:task_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_task(project_id, task_id):
+    project = get_project_for_editor_or_redirect(project_id)
+    if not isinstance(project, Project):
+        return project
+
     task = ProjectTask.query.get_or_404(task_id)
+
+    # Validar que la tarea pertenezca al proyecto
+    if task.project_id != project.id:
+        flash('La tarea no pertenece a este proyecto.', 'danger')
+        return redirect(url_for('editor.view_tasks', project_id=project.id))
 
     # Obtener los usuarios asignados al proyecto
     users_in_project = AdminUser.query.join(ProjectUserRole).filter(ProjectUserRole.project_id == project_id).all()
@@ -212,11 +306,11 @@ def edit_task(project_id, task_id):
         task.name = request.form.get('name')
         task.description = request.form.get('description')
 
-        task.start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d')  
-        task.end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d') if request.form.get('end_date') else None 
+        task.start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d')
+        task.end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d') if request.form.get('end_date') else None
 
         task.status = request.form.get('status')
-        task.responsible_user_id = request.form.get('responsible_user')  # Actualizar el responsable
+        task.responsible_user_id = request.form.get('responsible_user')
 
         db.session.commit()
 
@@ -230,10 +324,14 @@ def edit_task(project_id, task_id):
 @editor_bp.route('/project/<int:project_id>/task/<int:task_id>/delete', methods=['POST'])
 @login_required
 def delete_task(project_id, task_id):
+    project = get_project_for_editor_or_redirect(project_id)
+    if not isinstance(project, Project):
+        return project
+
     task = ProjectTask.query.get_or_404(task_id)
 
     # Verificar que la tarea pertenezca al proyecto
-    if task.project_id != project_id:
+    if task.project_id != project.id:
         flash('La tarea no pertenece a este proyecto.', 'danger')
         return redirect(url_for('editor.view_tasks', project_id=project_id))
 
@@ -249,7 +347,9 @@ def delete_task(project_id, task_id):
 @editor_bp.route('/proyecto/<int:project_id>/checklist')
 @login_required
 def checklist_items(project_id):
-    project = Project.query.get_or_404(project_id)
+    project = get_project_for_editor_or_redirect(project_id)
+    if not isinstance(project, Project):
+        return project
 
     if not current_user.has_role("editor"):
         abort(403)
@@ -257,11 +357,14 @@ def checklist_items(project_id):
     items = DailyChecklist.query.filter_by(project_id=project.id).all()
     return render_template("editor/checklist_items.html", project=project, items=items)
 
+
 # Agregar nuevo ítem al checklist
 @editor_bp.route('/proyecto/<int:project_id>/checklist/nuevo', methods=['GET', 'POST'])
 @login_required
 def nuevo_checklist_item(project_id):
-    project = Project.query.get_or_404(project_id)
+    project = get_project_for_editor_or_redirect(project_id)
+    if not isinstance(project, Project):
+        return project
 
     if not current_user.has_role("editor"):
         abort(403)
@@ -285,15 +388,23 @@ def nuevo_checklist_item(project_id):
         form=form
     )
 
+
 # Desactivar o activar ítem
 @editor_bp.route('/proyecto/<int:project_id>/checklist/<int:item_id>/toggle')
 @login_required
 def toggle_checklist_item(project_id, item_id):
-    project = Project.query.get_or_404(project_id)
+    project = get_project_for_editor_or_redirect(project_id)
+    if not isinstance(project, Project):
+        return project
+
     item = DailyChecklist.query.get_or_404(item_id)
 
     if not current_user.has_role("editor"):
         abort(403)
+
+    if item.project_id != project.id:
+        flash("El ítem no pertenece a este proyecto.", "danger")
+        return redirect(url_for("editor.checklist_items", project_id=project.id))
 
     item.is_active = not item.is_active
     db.session.commit()
@@ -308,7 +419,7 @@ def listar_proyectos():
     if not current_user.has_role("editor"):
         abort(403)
 
-    proyectos = Project.query.all() 
+    proyectos = get_base_project_query_for_editor().all()
     return render_template("editor/avance_obra.html", proyectos=proyectos)
 
 
@@ -319,7 +430,10 @@ def listar_avances(project_id):
     if not current_user.has_role("editor"):
         abort(403)
 
-    project = Project.query.get_or_404(project_id)
+    project = get_project_for_editor_or_redirect(project_id)
+    if not isinstance(project, Project):
+        return project
+
     avances = ProjectProgress.query.filter_by(project_id=project.id).order_by(ProjectProgress.date.desc()).all()
     return render_template("editor/avances.html", project=project, avances=avances)
 
@@ -331,7 +445,10 @@ def nuevo_avance(project_id):
     if not current_user.has_role("editor"):
         abort(403)
 
-    project = Project.query.get_or_404(project_id)
+    project = get_project_for_editor_or_redirect(project_id)
+    if not isinstance(project, Project):
+        return project
+
     form = ProgressForm()
 
     if form.validate_on_submit():
@@ -372,14 +489,22 @@ def nuevo_avance(project_id):
 
     return render_template("editor/nuevo_avance.html", form=form, project=project)
 
+
 # Ruta para ver y agregar comentarios a una tarea
 @editor_bp.route('/project/<int:project_id>/task/<int:task_id>/comments', methods=['GET', 'POST'])
 @login_required
 def task_comments(project_id, task_id):
     from sqlalchemy import select
 
-    project = Project.query.get_or_404(project_id)
+    project = get_project_for_editor_or_redirect(project_id)
+    if not isinstance(project, Project):
+        return project
+
     task = ProjectTask.query.get_or_404(task_id)
+
+    if task.project_id != project.id:
+        flash("La tarea no pertenece a este proyecto.", "danger")
+        return redirect(url_for('editor.view_tasks', project_id=project.id))
 
     if request.method == 'POST':
         content = request.form.get('content')
@@ -408,18 +533,28 @@ def task_comments(project_id, task_id):
     return render_template('editor/task_comments.html', project=project, task=task, comments=comments)
 
 
-
 @editor_bp.route('/reportes')
 @login_required
 def listar_reportes():
-    reportes = TechnicalReport.query.filter_by(user_id=current_user.id).order_by(TechnicalReport.created_at.desc()).all()
+    # Solo reportes del usuario y de proyectos de su empresa
+    reportes = (
+        TechnicalReport.query
+        .join(Project, TechnicalReport.project_id == Project.id)
+        .join(AdminUser, Project.creator_id == AdminUser.id)
+        .filter(
+            TechnicalReport.user_id == current_user.id,
+            AdminUser.empresa_id == current_user.empresa_id
+        )
+        .order_by(TechnicalReport.created_at.desc())
+        .all()
+    )
     return render_template('editor/listar_reportes.html', reportes=reportes)
 
 
 @editor_bp.route('/reportes/nuevo', methods=['GET', 'POST'])
 @login_required
 def nuevo_reporte():
-    proyectos = Project.query.all()
+    proyectos = get_base_project_query_for_editor().all()
     chile_tz = pytz.timezone("America/Santiago")
     ahora_chile = datetime.now(chile_tz)
 
@@ -429,6 +564,12 @@ def nuevo_reporte():
         report_date = request.form.get('report_date')
         inspector = request.form.get('inspector')
         period = request.form.get('period')
+
+        # Validar proyecto y empresa
+        project = Project.query.get_or_404(project_id)
+        if project.creator.empresa_id != current_user.empresa_id:
+            flash("No puedes crear reportes para proyectos de otra empresa.", "danger")
+            return redirect(url_for('editor.listar_reportes'))
 
         # Variables de Avance
         general_progress = request.form.get('general_progress')
@@ -478,7 +619,7 @@ def nuevo_reporte():
         reporte = TechnicalReport(
             title=title,
             content=content,
-            project_id=project_id,
+            project_id=project.id,
             user_id=current_user.id,
             created_at=ahora_chile,
             attachment_path=attachment_path,
@@ -505,19 +646,30 @@ def nuevo_reporte():
     return render_template('editor/nuevo_reporte.html', proyectos=proyectos)
 
 
-
 @editor_bp.route('/reportes/ver/<int:reporte_id>')
 @login_required
 def ver_reporte(reporte_id):
     reporte = TechnicalReport.query.get_or_404(reporte_id)
-    proyecto = Project.query.get(reporte.project_id)
+
+    # Seguridad: solo el autor y dentro de su empresa
+    if reporte.user_id != current_user.id or reporte.project.creator.empresa_id != current_user.empresa_id:
+        flash("No tienes permiso para ver este reporte.", "danger")
+        return redirect(url_for('editor.listar_reportes'))
+
+    proyecto = reporte.project
     return render_template('editor/ver_reporte.html', reporte=reporte, proyecto=proyecto)
+
 
 # Ruta para descargar el archivo adjunto de un reporte
 @editor_bp.route('/reportes/descargar/<int:reporte_id>')
 @login_required
 def descargar_reporte_archivo(reporte_id):
     reporte = TechnicalReport.query.get_or_404(reporte_id)
+
+    # Seguridad: solo el autor y misma empresa
+    if reporte.user_id != current_user.id or reporte.project.creator.empresa_id != current_user.empresa_id:
+        flash("No tienes permiso para descargar este archivo.", "danger")
+        return redirect(url_for('editor.listar_reportes'))
 
     if not reporte.attachment_path:
         flash('Este reporte no tiene archivo adjunto.', 'warning')
@@ -539,11 +691,54 @@ def descargar_reporte_archivo(reporte_id):
 @login_required
 def editar_reporte(reporte_id):
     reporte = TechnicalReport.query.get_or_404(reporte_id)
-    proyectos = Project.query.all()
 
+    # --- 1) VALIDAR MISMA EMPRESA ---
+    if reporte.project.creator.empresa_id != current_user.empresa_id:
+        flash("No tienes permiso para editar reportes de otra empresa.", "danger")
+        return redirect(url_for('editor.listar_reportes'))
+
+    # --- 2) VALIDAR QUE EL USUARIO ESTÉ ASIGNADO AL PROYECTO (OPCIÓN C) ---
+    asignado = ProjectUserRole.query.filter_by(
+        project_id=reporte.project_id,
+        user_id=current_user.id
+    ).first()
+
+    if not asignado:
+        flash("No estás asignado a este proyecto. No puedes editar este reporte.", "danger")
+        return redirect(url_for('editor.listar_reportes'))
+
+    # --- 3) Obtener lista de proyectos filtrados por empresa ---
+    proyectos = get_base_project_query_for_editor().all()
+
+    # --- 4) Procesar formulario ---
     if request.method == 'POST':
-        # ✅ Campos de texto y selección
-        reporte.project_id = int(request.form.get('project_id')) if request.form.get('project_id') else None
+
+        # Proyecto seleccionado
+        project_id_str = request.form.get('project_id')
+
+        if project_id_str:
+            nuevo_proyecto = Project.query.get_or_404(int(project_id_str))
+
+            # Validar empresa del proyecto destino
+            if nuevo_proyecto.creator.empresa_id != current_user.empresa_id:
+                flash("Ese proyecto no pertenece a tu empresa.", "danger")
+                return redirect(url_for('editor.editar_reporte', reporte_id=reporte.id))
+
+            # Validar asignación del usuario al proyecto destino
+            asignado_destino = ProjectUserRole.query.filter_by(
+                project_id=nuevo_proyecto.id,
+                user_id=current_user.id
+            ).first()
+
+            if not asignado_destino:
+                flash("No estás asignado al proyecto seleccionado.", "danger")
+                return redirect(url_for('editor.editar_reporte', reporte_id=reporte.id))
+
+            reporte.project_id = nuevo_proyecto.id
+
+        # Campos de texto
+        reporte.title = request.form.get('title')
+        reporte.content = request.form.get('content')
         reporte.inspector = request.form.get('inspector')
         reporte.period = request.form.get('period')
         reporte.general_progress = request.form.get('general_progress')
@@ -553,23 +748,23 @@ def editar_reporte(reporte_id):
         reporte.weather_conditions = request.form.get('weather_conditions')
         reporte.additional_notes = request.form.get('additional_notes')
 
-        # ✅ Fecha (convertir string a objeto date)
+        # Fecha
         date_str = request.form.get('report_date')
         if date_str:
             try:
                 reporte.report_date = datetime.strptime(date_str, "%Y-%m-%d").date()
             except ValueError:
                 flash("⚠️ Fecha inválida. Usa el formato AAAA-MM-DD.", "warning")
-                return redirect(request.url)
+                return redirect(url_for('editor.editar_reporte', reporte_id=reporte.id))
 
-        # ✅ Numéricos (con control si están vacíos)
+        # Números
         progress_str = request.form.get('progress_percentage')
-        reporte.progress_percentage = float(progress_str) if progress_str else None
-
         workers_str = request.form.get('workers_on_site')
+
+        reporte.progress_percentage = float(progress_str) if progress_str else None
         reporte.workers_on_site = int(workers_str) if workers_str else None
 
-        # ✅ Imagen de evidencia (si se reemplaza)
+        # Imagen evidencia
         evidence_photo = request.files.get('evidence_photos')
         if evidence_photo and evidence_photo.filename:
             filename = secure_filename(evidence_photo.filename)
@@ -579,7 +774,7 @@ def editar_reporte(reporte_id):
             evidence_photo.save(file_path)
             reporte.evidence_photos = f'uploads/fotos/{filename}'
 
-        # ✅ Documento adjunto (si se reemplaza)
+        # Documento adjunto
         archivo = request.files.get('attachment')
         if archivo and archivo.filename:
             filename = secure_filename(archivo.filename)
@@ -589,11 +784,12 @@ def editar_reporte(reporte_id):
             archivo.save(file_path)
             reporte.attachment_path = f'uploads/reportes/{filename}'
 
-        # ✅ Guardar cambios
+        # Guardar cambios
         try:
             db.session.commit()
             flash('✅ Reporte técnico actualizado correctamente.', 'success')
             return redirect(url_for('editor.ver_reporte', reporte_id=reporte.id))
+
         except Exception as e:
             db.session.rollback()
             flash(f"❌ Error al actualizar el reporte: {e}", "danger")
@@ -601,11 +797,19 @@ def editar_reporte(reporte_id):
     return render_template('editor/editar_reporte.html', reporte=reporte, proyectos=proyectos)
 
 
+
+
+
 # Ruta para eliminar un reporte técnico
 @editor_bp.route('/reportes/eliminar/<int:reporte_id>', methods=['POST'])
 @login_required
 def eliminar_reporte(reporte_id):
     reporte = TechnicalReport.query.get_or_404(reporte_id)
+
+    # Seguridad: solo el autor y misma empresa
+    if reporte.user_id != current_user.id or reporte.project.creator.empresa_id != current_user.empresa_id:
+        flash("No tienes permiso para eliminar este reporte.", "danger")
+        return redirect(url_for('editor.listar_reportes'))
 
     if reporte.attachment_path:
         file_path = os.path.join(current_app.root_path, 'static', reporte.attachment_path)
@@ -620,13 +824,13 @@ def eliminar_reporte(reporte_id):
     return redirect(url_for('editor.listar_reportes'))
 
 
-
-
-
 @editor_bp.route('/plantillas')
 @login_required
 def ver_plantillas():
-    templates = ConfigTemplate.query.filter_by(is_active=True).all()
+    templates = ConfigTemplate.query.filter_by(
+        is_active=True,
+        empresa_id=current_user.empresa_id
+    ).all()
     return render_template('editor/plantillas.html', templates=templates)
 
 
@@ -634,7 +838,19 @@ def ver_plantillas():
 @login_required
 def flujos_asignados():
     # Solo flujos donde el usuario actual es responsable
-    flows = ApprovalFlow.query.filter_by(responsible_id=current_user.id).order_by(ApprovalFlow.created_at.desc()).all()
+    # y de proyectos de su empresa
+    flows = (
+        ApprovalFlow.query
+        .join(ProjectTask, ApprovalFlow.project_task_id == ProjectTask.id)
+        .join(Project, ProjectTask.project_id == Project.id)
+        .join(AdminUser, Project.creator_id == AdminUser.id)
+        .filter(
+            ApprovalFlow.responsible_id == current_user.id,
+            AdminUser.empresa_id == current_user.empresa_id
+        )
+        .order_by(ApprovalFlow.created_at.desc())
+        .all()
+    )
     return render_template('editor/flujos.html', flows=flows)
 
 
@@ -646,6 +862,11 @@ def actualizar_flujo(flow_id):
     # Solo el responsable (editor asignado) puede modificarlo
     if flow.responsible_id != current_user.id:
         flash("❌ No tienes permiso para modificar este flujo.", "danger")
+        return redirect(url_for('editor.flujos_asignados'))
+
+    # Validar empresa del proyecto asociado
+    if flow.task and flow.task.project.creator.empresa_id != current_user.empresa_id:
+        flash("❌ No puedes modificar flujos de otra empresa.", "danger")
         return redirect(url_for('editor.flujos_asignados'))
 
     nuevo_estado = request.form.get('estado')
@@ -681,6 +902,3 @@ def actualizar_flujo(flow_id):
 
     flash(f"✅ Flujo '{flow.name}' marcado como {nuevo_estado}.", "success")
     return redirect(url_for('editor.flujos_asignados'))
-
-
-

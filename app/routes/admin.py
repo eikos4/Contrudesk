@@ -1,13 +1,10 @@
 from datetime import datetime
-from tokenize import generate_tokens
-from zoneinfo import ZoneInfo
 from flask import Blueprint, redirect, render_template, url_for, flash
 from flask_login import current_user, login_required
 import pytz
-from sqlalchemy import func
-from app.forms import AssignUserForm, CreateUserForm, ProjectForm
-from app.models import AdminUser, ApprovalFlow, ConfigTemplate, ContactMessage, IncidentReport, Project, ProjectInvitation, ProjectTask, ProjectUserRole, Role, SystemNotification, TechnicalReport, UserRoles
-from app import db
+from sqlalchemy import func, case
+from app.forms import AssignUserForm, CreateUserForm, ProjectForm 
+from app.models import AdminUser, ApprovalFlow, ConfigTemplate, ContactMessage, IncidentReport, Project, ProjectInvitation, ProjectTask, ProjectUserRole, Role, SystemNotification, TechnicalReport, UserRoles, db
 from werkzeug.security import generate_password_hash
 from flask import request
 from werkzeug.utils import secure_filename
@@ -25,6 +22,18 @@ from flask import current_app
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
+# --- FUNCIONES DE FILTRADO BASE ---
+
+def get_base_project_query(empresa_id):
+    """Retorna la consulta base de Proyectos filtrada por AdminUser.empresa_id (el creador del proyecto)."""
+    return Project.query.join(
+        AdminUser, Project.creator_id == AdminUser.id
+    ).filter(
+        AdminUser.empresa_id == empresa_id
+    )
+
+# --------------------------------------------------------------------------------------------------
+
 # Ruta de inicio para el admin
 @admin_bp.route('/')
 @login_required
@@ -36,16 +45,15 @@ def admin_dashboard():
 @admin_bp.route('/usuarios')
 @login_required
 def usuarios():
-    # Obtener todos los usuarios con sus roles
-    usuarios = AdminUser.query.all()  
-    # Renderizar la plantilla con la lista de usuarios
+    empresa_id = current_user.empresa_id
+    # FILTRAR: OBTENER solo los usuarios que pertenecen a la misma empresa
+    usuarios = AdminUser.query.filter_by(empresa_id=empresa_id).all()
     return render_template('admin/usuarios.html', usuarios=usuarios)  
 
 # Ruta para crear un nuevo usuario
 @admin_bp.route('/admin/crear_usuario', methods=['GET', 'POST'])
 @login_required
 def crear_usuario():
-    # Solo el admin puede crear usuarios
     if not current_user.has_role('admin'):
         flash("No tienes permisos para acceder a esta página.", 'danger')
         return redirect(url_for('admin.admin_dashboard'))
@@ -55,28 +63,28 @@ def crear_usuario():
     form.rol.choices = [(role.id, role.name) for role in Role.query.all()]
 
     if form.validate_on_submit():
-        # Verificar si el correo ya existe
+        admin_empresa_id = current_user.empresa_id
+        
         user_exists = AdminUser.query.filter_by(email=form.email.data).first()
         if user_exists:
             flash("El correo electrónico ya está en uso.", 'danger')
             return redirect(url_for('admin.crear_usuario'))
         
-        # Crear el usuario
         new_user = AdminUser(
             nombre=form.nombre.data,
             email=form.email.data,
+            empresa_id=admin_empresa_id, 
             password_hash=generate_password_hash(form.password.data)
         )
         
-        # Asignar rol al usuario
         role = Role.query.get(form.rol.data)
         new_user.roles.append(role)
         
         db.session.add(new_user)
         db.session.commit()
         
-        flash('Usuario creado con éxito!', 'success')
-        return redirect(url_for('admin.admin_dashboard'))  
+        flash(f'Usuario {new_user.nombre} creado con éxito para la empresa {current_user.empresa.nombre}!', 'success')
+        return redirect(url_for('admin.admin_dashboard'))
 
     return render_template('admin/crear_usuario.html', form=form)
 
@@ -87,11 +95,9 @@ def nuevo_proyecto():
     form = ProjectForm()
 
     if form.validate_on_submit():
-        # 🧹 Limpiar el campo de presupuesto CLP (quita puntos y comas)
         raw_budget = request.form.get('total_budget', '').replace('.', '').replace(',', '').strip()
         total_budget = float(raw_budget) if raw_budget else 0.0
 
-        # 🏗️ Crear instancia del proyecto con todos los campos del modelo
         project = Project(
             name=form.name.data,
             description=form.description.data,
@@ -99,13 +105,12 @@ def nuevo_proyecto():
             end_date=form.end_date.data,
             progress=form.progress.data,
             status=form.status.data,
-            archived=False,  # Por defecto los proyectos nuevos no están archivados
+            archived=False,
             admin_comment=form.admin_comment.data,
             total_budget=total_budget,
-            creator_id=current_user.id  # 🔒 obligatorio por el modelo
+            creator_id=current_user.id # Vincula a la empresa del usuario
         )
 
-        # 📂 Manejo de archivos (presupuesto y cronograma)
         for field, folder in [('budget_file', 'presupuestos'), ('schedule_file', 'cronogramas')]:
             file = getattr(form, field).data
             if file:
@@ -116,24 +121,22 @@ def nuevo_proyecto():
                 file.save(file_path)
                 setattr(project, field, f'uploads/{folder}/{filename}')
 
-        # 💾 Guardar en base de datos
         db.session.add(project)
         db.session.commit()
 
         flash('✅ Proyecto creado correctamente.', 'success')
         return redirect(url_for('admin.list_projects'))
 
-    # Renderizar el formulario
     return render_template('admin/crear_proyecto.html', form=form)
-
-
 
 
 # Ruta para listar los proyectos
 @admin_bp.route('/list')
 @login_required
 def list_projects():
-    projects = Project.query.filter_by(creator_id=current_user.id).all()
+    empresa_id = current_user.empresa_id
+    # FILTRAR: Mostrar solo proyectos creados por usuarios de esta empresa
+    projects = get_base_project_query(empresa_id).all()
     return render_template('admin/ver_proyecto.html', projects=projects)
 
 # Ruta para editar un proyecto
@@ -141,14 +144,18 @@ def list_projects():
 @login_required
 def edit_project(project_id):
     project = Project.query.get_or_404(project_id)
+    
+    # AUTORIZACIÓN: Verificar que el proyecto pertenezca a la empresa del usuario
+    if project.creator.empresa_id != current_user.empresa_id:
+        flash('No tienes permiso para editar este proyecto.', 'danger')
+        return redirect(url_for('admin.list_projects'))
+        
     form = ProjectForm(obj=project)
 
     if form.validate_on_submit():
-        # 🧹 Limpiar presupuesto CLP
         raw_budget = request.form.get('total_budget', '').replace('.', '').replace(',', '').strip()
         project.total_budget = float(raw_budget) if raw_budget else 0.0
 
-        # Actualizar campos
         project.name = form.name.data
         project.description = form.description.data
         project.start_date = form.start_date.data
@@ -157,7 +164,6 @@ def edit_project(project_id):
         project.status = form.status.data
         project.admin_comment = form.admin_comment.data
 
-        # 📂 Reemplazar archivos si se suben nuevos
         for field, folder in [('budget_file', 'presupuestos'), ('schedule_file', 'cronogramas')]:
             file = getattr(form, field).data
             if file:
@@ -179,7 +185,8 @@ def edit_project(project_id):
 @login_required
 def archive_project(project_id):
     project = Project.query.get_or_404(project_id)
-    if project.creator_id != current_user.id:
+    # AUTORIZACIÓN: Verificar que el proyecto pertenezca a la empresa del usuario
+    if project.creator.empresa_id != current_user.empresa_id:
         flash('No tienes permiso para archivar este proyecto.', 'danger')
         return redirect(url_for('admin.list_projects'))
 
@@ -195,7 +202,8 @@ def archive_project(project_id):
 def unarchive_project(project_id):
     project = Project.query.get_or_404(project_id)
     
-    if project.creator_id != current_user.id:
+    # AUTORIZACIÓN: Verificar que el proyecto pertenezca a la empresa del usuario
+    if project.creator.empresa_id != current_user.empresa_id:
         flash('No tienes permiso para desarchivar este proyecto.', 'danger')
         return redirect(url_for('admin.list_projects'))
 
@@ -209,8 +217,12 @@ def unarchive_project(project_id):
 @admin_bp.route('/assign_user_to_project', methods=['GET', 'POST'])
 @login_required
 def assign_user_to_project():
-    users = AdminUser.query.all()  
-    projects = Project.query.all() 
+    empresa_id = current_user.empresa_id
+    
+    # FILTRAR: Solo usuarios de la misma empresa
+    users = AdminUser.query.filter_by(empresa_id=empresa_id).all()  
+    # FILTRAR: Solo proyectos de la misma empresa
+    projects = get_base_project_query(empresa_id).all()
     roles = Role.query.all() 
 
     if request.method == 'POST':
@@ -219,16 +231,18 @@ def assign_user_to_project():
         role_id = request.form.get('role_id') 
 
         if user_id and project_id and role_id:
-            # Buscar el usuario, proyecto y rol en la base de datos
             user = AdminUser.query.get_or_404(user_id)
             project = Project.query.get_or_404(project_id)
             role = Role.query.get_or_404(role_id)
 
-            # Verificar si el usuario ya está asignado a este proyecto
+            # AUTORIZACIÓN: Doble check de que el usuario y el proyecto pertenezcan a la empresa
+            if user.empresa_id != empresa_id or project.creator.empresa_id != empresa_id:
+                 flash('Asignación fallida: Usuario o proyecto no pertenece a tu empresa.', 'danger')
+                 return redirect(url_for('admin.assign_user_to_project'))
+
             existing_assignment = ProjectUserRole.query.filter_by(user_id=user.id, project_id=project.id).first()
 
             if existing_assignment:
-                # Si ya está asignado, actualizamos el rol
                 existing_assignment.role_id = role.id
                 db.session.commit()
                 flash('El rol del usuario ha sido actualizado.', 'success')
@@ -250,28 +264,29 @@ def assign_user_to_project():
 @login_required
 def project_details(project_id):
     project = Project.query.get_or_404(project_id)
-    users_in_project = ProjectUserRole.query.filter_by(project_id=project.id).all()  # Obtener los usuarios asignados
-    roles = Role.query.all()  # Obtener todos los roles disponibles
+    
+    # AUTORIZACIÓN: Verificar que el proyecto pertenezca a la empresa del usuario
+    if project.creator.empresa_id != current_user.empresa_id:
+        flash('No tienes permiso para ver los detalles de este proyecto.', 'danger')
+        return redirect(url_for('admin.list_projects'))
+        
+    users_in_project = ProjectUserRole.query.filter_by(project_id=project.id).all()
+    roles = Role.query.all()
     return render_template('admin/detalles_proyecto.html', project=project, users_in_project=users_in_project, roles=roles)
-
-
-
-
-
-
-
-
-
 
 
 # Listar todas las incidencias
 @admin_bp.route('/incidencias', methods=['GET'])
 @login_required
 def listar_incidencias():
+    empresa_id = current_user.empresa_id
     estado = request.args.get('estado')
     gravedad = request.args.get('gravedad')
-
-    query = IncidentReport.query.join(Project).order_by(IncidentReport.report_datetime.desc())
+    
+    # FILTRO BASE: Unir IncidentReport con Project y AdminUser para filtrar por empresa
+    query = IncidentReport.query.join(Project).join(AdminUser, Project.creator_id == AdminUser.id).filter(
+        AdminUser.empresa_id == empresa_id
+    ).order_by(IncidentReport.report_datetime.desc())
 
     if estado:
         query = query.filter(IncidentReport.status == estado)
@@ -279,7 +294,8 @@ def listar_incidencias():
         query = query.filter(IncidentReport.severity == gravedad)
 
     incidencias = query.all()
-    usuarios = AdminUser.query.all()  
+    # FILTRO: Solo usuarios de la misma empresa para la lista desplegable
+    usuarios = AdminUser.query.filter_by(empresa_id=empresa_id).all()
 
     return render_template('admin/incidencias.html', incidencias=incidencias, usuarios=usuarios, estado=estado, gravedad=gravedad)
 
@@ -290,16 +306,18 @@ def listar_incidencias():
 def actualizar_incidencia(incident_id):
     incidencia = IncidentReport.query.get_or_404(incident_id)
 
+    # AUTORIZACIÓN: Verificar que el proyecto de la incidencia pertenezca a la empresa
+    if incidencia.project.creator.empresa_id != current_user.empresa_id:
+        flash('No tienes permiso para actualizar esta incidencia.', 'danger')
+        return redirect(url_for('admin.listar_incidencias'))
+
     incidencia.status = request.form.get('status')
     incidencia.severity = request.form.get('severity')
     incidencia.responsible_user_id = request.form.get('responsible_user_id') or None
 
-    # Si la incidencia se marca como cerrada SE registra UNA fecha de cierre
     if incidencia.status == 'cerrado':
-
         chile_tz = pytz.timezone("America/Santiago")
         ahora_chile = datetime.now(chile_tz)
-
         incidencia.closure_date = ahora_chile
     else:
         incidencia.closure_date = None
@@ -313,6 +331,12 @@ def actualizar_incidencia(incident_id):
 @login_required
 def ver_incidencia(incident_id):
     incidencia = IncidentReport.query.get_or_404(incident_id)
+    
+    # AUTORIZACIÓN: Verificar que el proyecto de la incidencia pertenezca a la empresa
+    if incidencia.project.creator.empresa_id != current_user.empresa_id:
+        flash('No tienes permiso para ver esta incidencia.', 'danger')
+        return redirect(url_for('admin.listar_incidencias'))
+        
     proyecto = Project.query.get(incidencia.project_id)
     return render_template('admin/ver_incidencia.html', incidencia=incidencia, proyecto=proyecto)
 
@@ -322,6 +346,12 @@ def ver_incidencia(incident_id):
 @login_required
 def descargar_incidencia_pdf(incident_id):
     incidencia = IncidentReport.query.get_or_404(incident_id)
+    
+    # AUTORIZACIÓN: Verificar que el proyecto de la incidencia pertenezca a la empresa
+    if incidencia.project.creator.empresa_id != current_user.empresa_id:
+        flash('No tienes permiso para descargar este reporte.', 'danger')
+        return redirect(url_for('admin.listar_incidencias'))
+        
     proyecto = Project.query.get(incidencia.project_id)
 
     # Crear PDF en memoria
@@ -404,12 +434,19 @@ def descargar_incidencia_pdf(incident_id):
 @admin_bp.route('/reportes', methods=['GET'])
 @login_required
 def ver_reportes():
+    empresa_id = current_user.empresa_id
+    
     if not current_user.has_role('admin'):
         flash("No tienes permiso para acceder a esta sección.", "danger")
         return redirect(url_for('editor.listar_reportes'))
 
-    reportes = TechnicalReport.query.order_by(TechnicalReport.report_date.desc()).all()
-    proyectos = Project.query.all()
+    # FILTRAR: Unir TechnicalReport con Project y AdminUser para filtrar por empresa
+    reportes = TechnicalReport.query.join(Project).join(AdminUser, Project.creator_id == AdminUser.id).filter(
+        AdminUser.empresa_id == empresa_id
+    ).order_by(TechnicalReport.report_date.desc()).all()
+    
+    # FILTRAR: Solo proyectos de la empresa actual
+    proyectos = get_base_project_query(empresa_id).all()
 
     return render_template('admin/reportes.html', reportes=reportes, proyectos=proyectos)
 
@@ -418,19 +455,39 @@ def ver_reportes():
 @admin_bp.route('/plantillas')
 @login_required
 def plantillas():
-    templates = ConfigTemplate.query.all()
+    empresa_id = current_user.empresa_id
+
+    templates = ConfigTemplate.query.filter_by(
+        empresa_id=empresa_id
+    ).all()
+    
     return render_template('admin/plantillas.html', templates=templates)
+
+
 
 
 @admin_bp.route('/flujos_aprobacion')
 @login_required
 def flujos_aprobacion():
-    flows = ApprovalFlow.query.order_by(ApprovalFlow.created_at.desc()).all()
-    completed_tasks = ProjectTask.query.filter_by(status='completada').all()
+    empresa_id = current_user.empresa_id
+    
+    # FILTRAR: Flujos basados en tareas de proyectos de la empresa
+    base_project_ids = get_base_project_query(empresa_id).with_entities(Project.id)
+    
+    flows = ApprovalFlow.query.join(ProjectTask).filter(
+        ProjectTask.project_id.in_(base_project_ids)
+    ).order_by(ApprovalFlow.created_at.desc()).all()
+    
+    # FILTRAR: Tareas completadas solo de proyectos de la empresa
+    completed_tasks = ProjectTask.query.filter(
+        ProjectTask.project_id.in_(base_project_ids),
+        ProjectTask.status == 'completada'
+    ).all()
 
-    # Solo usuarios con rol "editor"
+    # FILTRAR: Solo usuarios con rol "editor" DE ESTA EMPRESA
     users = (
         AdminUser.query
+        .filter_by(empresa_id=empresa_id)
         .join(UserRoles, UserRoles.user_id == AdminUser.id)
         .join(Role, Role.id == UserRoles.role_id)
         .filter(Role.name.ilike('editor')) 
@@ -444,7 +501,6 @@ def flujos_aprobacion():
         users=users
     )
 
-# Ruta para agregar una nueva plantilla de configuración
 @admin_bp.route('/nueva_plantilla', methods=['POST'])
 @login_required
 def nueva_plantilla():
@@ -458,29 +514,42 @@ def nueva_plantilla():
 
         filename = file.filename.replace(" ", "_")
         file_path_abs = os.path.join(upload_dir, filename)
-
         file.save(file_path_abs)
 
         file_path = f"uploads/plantillas/{filename}"
     else:
         file_path = None
 
-    new_template = ConfigTemplate(name=name, description=description, file_path=file_path)
+    new_template = ConfigTemplate(
+        name=name,
+        description=description,
+        file_path=file_path,
+        empresa_id=current_user.empresa_id  # ← ESTA ES LA RELACIÓN REAL
+    )
+
     db.session.add(new_template)
     db.session.commit()
+
     flash("Plantilla agregada correctamente", "success")
     return redirect(url_for('admin.plantillas'))
+
 
 
 # Ruta para crear un nuevo flujo de aprobación
 @admin_bp.route('/nuevo_flujo', methods=['POST'])
 @login_required
 def nuevo_flujo():
+    empresa_id = current_user.empresa_id
     task_id = request.form.get('task_id')
     responsible_id = request.form.get('responsible_id')
     description = request.form.get('description')
 
     task = ProjectTask.query.get_or_404(task_id)
+
+    # AUTORIZACIÓN: Verificar que la tarea pertenezca a un proyecto de la empresa
+    if task.project.creator.empresa_id != empresa_id:
+        flash("No puedes crear un flujo de aprobación para una tarea de otra empresa.", "danger")
+        return redirect(url_for('admin.flujos_aprobacion'))
 
     flow = ApprovalFlow(
         name=f"Revisión: {task.name}",
@@ -501,7 +570,7 @@ def nuevo_flujo():
 def notificaciones():
     from app.models import SystemNotification
 
-    # Todas las notificaciones del usuario actual
+    # Las notificaciones ya están filtradas por user_id (current_user.id)
     notificaciones = (
         SystemNotification.query
         .filter_by(user_id=current_user.id)
@@ -515,25 +584,37 @@ def notificaciones():
     return render_template('admin/notificaciones.html', notificaciones=notificaciones)
 
 
-
-from sqlalchemy import func, case
-
 @admin_bp.route('/dashboard_control')
 @login_required
 def dashboard_control():
-    # --- KPIs principales ---
-    total_proyectos = Project.query.count()
-    proyectos_activos = Project.query.filter_by(status='activo').count()
-    proyectos_finalizados = Project.query.filter_by(status='finalizado').count()
-    proyectos_atrasados = Project.query.filter(Project.end_date < datetime.utcnow(), Project.status != 'finalizado').count()
+    empresa_id = current_user.empresa_id
+    base_project_query = get_base_project_query(empresa_id)
+    project_ids = base_project_query.with_entities(Project.id)
 
-    progreso_promedio = db.session.query(func.avg(Project.progress)).scalar() or 0
-    tareas_completadas = ProjectTask.query.filter_by(status='completada').count()
-    reportes_tecnicos = TechnicalReport.query.count()
-    incidentes = IncidentReport.query.count()
-    proyectos = Project.query.with_entities(Project.name, Project.progress).all()
+    # --- KPIs principales (FILTRADOS) ---
+    total_proyectos = base_project_query.count()
+    
+    # 🟢 CORRECCIÓN APLICADA: Usar Project.status == 'activo'
+    proyectos_activos = base_project_query.filter(Project.status == 'activo').count()
+    
+    # 🟢 CORRECCIÓN APLICADA: Usar Project.status == 'finalizado'
+    proyectos_finalizados = base_project_query.filter(Project.status == 'finalizado').count()
+    
+    proyectos_atrasados = base_project_query.filter(Project.end_date < datetime.utcnow(), Project.status != 'finalizado').count()
 
-    # --- Desempeño por editor ---
+    progreso_promedio = base_project_query.with_entities(func.avg(Project.progress)).scalar() or 0
+    
+    # Tareas, Reportes e Incidentes filtrados por los IDs de proyectos de la empresa
+    tareas_completadas = ProjectTask.query.filter(
+        ProjectTask.project_id.in_(project_ids), 
+        ProjectTask.status == 'completada'
+    ).count()
+    
+    reportes_tecnicos = TechnicalReport.query.filter(TechnicalReport.project_id.in_(project_ids)).count()
+    incidentes = IncidentReport.query.filter(IncidentReport.project_id.in_(project_ids)).count()
+    proyectos = base_project_query.with_entities(Project.name, Project.progress).all()
+
+    # --- Desempeño por editor (FILTRADO POR EMPRESA) ---
     desempeño_editores = (
         db.session.query(
             AdminUser.nombre.label("nombre"),
@@ -544,6 +625,7 @@ def dashboard_control():
                 case((ApprovalFlow.status == 'pendiente', 1))
             ).label("pendientes")
         )
+        .filter(AdminUser.empresa_id == empresa_id) # FILTRO AQUI
         .join(ApprovalFlow, ApprovalFlow.responsible_id == AdminUser.id)
         .group_by(AdminUser.nombre)
         .all()
@@ -562,8 +644,3 @@ def dashboard_control():
         proyectos=proyectos,
         desempeño_editores=desempeño_editores
     )
-
-
-
-
-

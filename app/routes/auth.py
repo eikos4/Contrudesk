@@ -11,6 +11,8 @@ auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 def redirect_by_role(user):
     if user.has_role('admin'):
         return redirect(url_for('admin.admin_dashboard'))
+    elif user.has_role('superadmin'):
+        return redirect(url_for('superadmin.dashboard'))
     elif user.has_role('editor'):
         return redirect(url_for('editor.editor_dashboard'))
     elif user.has_role('miembro'):

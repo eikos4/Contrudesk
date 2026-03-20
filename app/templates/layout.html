@@ -3,70 +3,50 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}Kodesk Admin{% endblock %}</title>
 
-  <!-- Tailwind CDN -->
+  <!-- TÍTULO DINÁMICO -->
+  <title>
+    {{ global_config.system_name if global_config else "Kodesk Admin" }}
+  </title>
+
   <script src="https://cdn.tailwindcss.com"></script>
 
   <!-- Fuente profesional -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="icon" href="{{ url_for('static', filename='logo.png') }}">
 
+  <!-- LOGO DINÁMICO -->
+  <link rel="icon" 
+        href="{% if global_config and global_config.logo_path %}
+                  {{ url_for('static', filename=global_config.logo_path) }}
+               {% else %}
+                  {{ url_for('static', filename='logo.png') }}
+               {% endif %}">
+
+  <!-- VARIABLES DE COLOR (CONFIG GLOBAL) -->
   <style>
-    body {
-      font-family: 'Inter', sans-serif !important; 
-      background-color: #c7c7c7 !important; /* Fondo oscuro */
+    :root {
+      --color-primary: {{ global_config.color_primary if global_config else '#1e3a8a' }};
+      --color-secondary: {{ global_config.color_secondary if global_config else '#2563eb' }};
     }
 
-    .btn {
-      @apply inline-flex items-center justify-center px-4 py-2 rounded-lg font-semibold transition;
+    body {
+      font-family: 'Inter', sans-serif !important;
+      background-color: #c7c7c7 !important;
     }
 
     .btn-primary {
-      @apply bg-blue-600 text-white hover:bg-blue-700;
+      background-color: var(--color-primary) !important;
+    }
+    .btn-primary:hover {
+      background-color: var(--color-secondary) !important;
     }
 
-    .btn-ghost {
-      @apply bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700;
-    }
-
-    .card {
-      @apply bg-slate-900 border border-slate-800 rounded-xl shadow-lg;
-    }
-
-    .no-form-style .form-control {
-      background-color: #f9fafb !important;
-      color: #374151 !important;
-      border: 1px solid #d1d5db !important;
-    }
-
-    .no-form-style .btn-create {
-      background-color: #ef4444 !important;
-      color: white;
-      transition: background-color 0.3s ease;
-    }
-
-    .no-form-style .btn-create:hover {
-      background-color: #dc2626 !important;
-    }
-
-    /* Animación para mobile menu */
-    @keyframes slideDown {
-      from {
-        opacity: 0;
-        transform: translateY(-10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-    
-    .mobile-menu-enter {
-      animation: slideDown 0.2s ease-out;
+    .nav-accent {
+      background-color: var(--color-primary) !important;
     }
   </style>
 </head>
+
 <body class="min-h-screen flex flex-col">
 
   <!-- Header fijo con mejor diseño responsive -->
@@ -79,7 +59,7 @@
             <span class="text-white font-bold text-lg">C</span>
           </div>
           <span class="text-xl font-bold text-white hidden sm:inline">
-            ConstruDESK
+            {{ global_config.system_name if global_config else "Kodesk Admin" }}
           </span>
         </a>
         
@@ -368,7 +348,7 @@
               </svg>
               Dashboard de Proyectos
             </a>
-            <a href="{{ url_for('editor.editor_dashboard') }}" 
+            <a href="{{ url_for('lector.lector_documentos') }}" 
               class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-300 
                       hover:text-white hover:bg-slate-700 rounded-lg transition-colors whitespace-nowrap">
               <svg xmlns="http://www.w3.org/2000/svg"
@@ -391,6 +371,59 @@
                 </svg>
                 Mensajes
               </a>
+          {% elif current_user.has_role('superadmin') %}
+            <a href="{{ url_for('superadmin.dashboard') }}" 
+                class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-300 
+                        hover:text-white hover:bg-slate-700 rounded-lg transition-colors whitespace-nowrap">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                    fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+                    class="w-4 h-4">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M3 7h4l2 2h12v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+                </svg>
+                Dashboard
+              </a>
+          {% elif current_user.has_role('invitado') %}
+
+            <!-- MIS PROYECTOS -->
+            <a href="{{ url_for('invitado.dashboard_invitado') }}" 
+                class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-300 
+                      hover:text-white hover:bg-slate-700 rounded-lg transition-colors whitespace-nowrap">
+                <svg xmlns="http://www.w3.org/2000/svg" 
+                    fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+                    class="w-4 h-4">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M3 7l7-4 7 4M5 10h14M5 16h14M5 22h14" />
+                </svg>
+                Mis Proyectos
+            </a>
+
+            <!-- DOCUMENTOS DE PROYECTO -->
+            <a href="{{ url_for('invitado.documentos_invitado') }}" 
+                class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-300 
+                      hover:text-white hover:bg-slate-700 rounded-lg transition-colors whitespace-nowrap">
+                <svg xmlns="http://www.w3.org/2000/svg" 
+                    fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+                    class="w-4 h-4">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M12 4v16m8-8H4" />
+                </svg>
+                Documentos
+            </a>
+
+            <!-- AVANCES DE OBRA -->
+            <a href="{{ url_for('invitado.listar_proyectos') }}" 
+                class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-300 
+                      hover:text-white hover:bg-slate-700 rounded-lg transition-colors whitespace-nowrap">
+                <svg xmlns="http://www.w3.org/2000/svg" 
+                    fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+                    class="w-4 h-4">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M3 17l6-6 4 4 8-8" />
+                </svg>
+                Avances de Obra
+            </a>
+
           {% endif %}
         </div>
 
@@ -563,7 +596,7 @@
               </svg>
               Dashboard de Proyectos
             </a>
-            <a href="{{ url_for('editor.editor_dashboard') }}" 
+            <a href="{{ url_for('lector.lector_documentos') }}" 
               class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-300 
                       hover:text-white hover:bg-slate-700 rounded-lg transition-colors whitespace-nowrap">
               <svg xmlns="http://www.w3.org/2000/svg"
@@ -586,6 +619,46 @@
                 </svg>
                 Mensajes
               </a>
+            {% elif current_user.has_role('invitado') %}
+
+            <!-- MIS PROYECTOS -->
+            <a href="{{ url_for('invitado.dashboard_invitado') }}" 
+                class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-300 
+                      hover:text-white hover:bg-slate-700 rounded-lg transition-colors whitespace-nowrap">
+                <svg xmlns="http://www.w3.org/2000/svg" 
+                    fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+                    class="w-4 h-4">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M3 7l7-4 7 4M5 10h14M5 16h14M5 22h14" />
+                </svg>
+                Mis Proyectos
+            </a>
+
+            <!-- DOCUMENTOS DE PROYECTO -->
+            <a href="{{ url_for('invitado.documentos_invitado') }}" 
+                class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-300 
+                      hover:text-white hover:bg-slate-700 rounded-lg transition-colors whitespace-nowrap">
+                <svg xmlns="http://www.w3.org/2000/svg" 
+                    fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+                    class="w-4 h-4">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M12 4v16m8-8H4" />
+                </svg>
+                Documentos
+            </a>
+
+            <!-- AVANCES DE OBRA -->
+            <a href="{{ url_for('invitado.listar_proyectos') }}" 
+                class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-300 
+                      hover:text-white hover:bg-slate-700 rounded-lg transition-colors whitespace-nowrap">
+                <svg xmlns="http://www.w3.org/2000/svg" 
+                    fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+                    class="w-4 h-4">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M3 17l6-6 4 4 8-8" />
+                </svg>
+                Avances de Obra
+            </a>
             {% endif %}
           </div>
         </div>

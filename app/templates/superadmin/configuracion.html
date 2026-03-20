@@ -1,0 +1,123 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<div class="min-h-screen py-10 bg-gray-100">
+  <div class="container mx-auto px-6 max-w-4xl">
+
+    <!-- Header -->
+    <div class="bg-white rounded-3xl shadow-xl p-8 mb-8 flex items-center gap-4">
+      <div class="p-4 bg-blue-600 rounded-2xl shadow">
+        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 4v4m0 8v4m8-8h4M4 12H0m17.657-5.657l2.828 2.828M5.515 18.485l-2.828 2.828m0-14l2.828 2.828M18.485 18.485l2.828 2.828"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900">Configuración Global</h1>
+        <p class="text-gray-600">Ajustes generales del sistema y apariencia de la plataforma.</p>
+      </div>
+    </div>
+
+    <!-- Card principal -->
+    <form method="POST" enctype="multipart/form-data">
+      <div class="bg-white rounded-3xl shadow-xl p-8 space-y-10">
+
+        <!-- Nombre del sistema -->
+        <div>
+          <label class="block text-lg font-medium text-gray-700 mb-2">Nombre del Sistema</label>
+          <input
+            type="text"
+            name="system_name"
+            value="{{ config.system_name if config else '' }}"
+            placeholder="Ejemplo: ConstruDesk Pro"
+            class="w-full px-4 py-3 rounded-xl border border-gray-300 shadow-sm focus:ring-2 focus:ring-blue-500"
+          >
+        </div>
+
+        <!-- Logo -->
+        <div>
+          <label class="block text-lg font-medium text-gray-700 mb-2">Logo del Sistema</label>
+
+          {% if config and config.logo_path %}
+            <div class="mb-3">
+              <img src="{{ url_for('static', filename=config.logo_path) }}"
+                   class="h-20 rounded-xl shadow">
+            </div>
+          {% endif %}
+
+          <input
+            type="file"
+            name="logo"
+            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-300 shadow-sm cursor-pointer"
+          >
+        </div>
+
+        <!-- Colores -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-lg font-medium text-gray-700 mb-2">Color Primario</label>
+            <input
+              type="color"
+              name="color_primary"
+              value="{{ config.color_primary if config else '#1e3a8a' }}"
+              class="w-16 h-12 rounded-lg border border-gray-300 shadow-sm cursor-pointer"
+            >
+          </div>
+          <div>
+            <label class="block text-lg font-medium text-gray-700 mb-2">Color Secundario</label>
+            <input
+              type="color"
+              name="color_secondary"
+              value="{{ config.color_secondary if config else '#2563eb' }}"
+              class="w-16 h-12 rounded-lg border border-gray-300 shadow-sm cursor-pointer"
+            >
+          </div>
+        </div>
+
+        <!-- Funciones del sistema -->
+        <div class="bg-gray-50 rounded-2xl p-6 border border-gray-200">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4">Funciones del Sistema</h2>
+
+          <div class="space-y-4">
+
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" name="enable_reports"
+                     class="h-5 w-5 text-blue-600 rounded"
+                     {% if config and config.enable_reports %}checked{% endif %}>
+              <span class="text-gray-800">Activar módulo de reportes</span>
+            </label>
+
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" name="enable_integrations"
+                     class="h-5 w-5 text-blue-600 rounded"
+                     {% if config and config.enable_integrations %}checked{% endif %}>
+              <span class="text-gray-800">Permitir integraciones externas (API / ERP / BIM)</span>
+            </label>
+
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" name="maintenance_mode"
+                     class="h-5 w-5 text-red-600 rounded"
+                     {% if config and config.maintenance_mode %}checked{% endif %}>
+              <span class="text-gray-800">Modo mantenimiento</span>
+            </label>
+
+          </div>
+        </div>
+
+        <!-- Botón Guardar -->
+        <div class="pt-4">
+          <button
+            type="submit"
+            class="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold
+                   text-lg hover:bg-blue-700 transition-all shadow-lg">
+            Guardar Configuración
+          </button>
+        </div>
+
+      </div>
+    </form>
+
+  </div>
+</div>
+
+{% endblock %}

@@ -1,34 +1,53 @@
-from flask import Blueprint, render_template
-from flask_login import login_required
+from flask import Blueprint, render_template, abort
+from flask_login import login_required, current_user
 from sqlalchemy import func, and_
-from app.models import Project, ProjectDocument, ProjectProgress, TechnicalReport
+from app.models import Project, ProjectDocument, ProjectProgress, TechnicalReport, AdminUser
 from app import db
 from flask import request, redirect, url_for, flash
-from flask_login import current_user
 import os
 from werkzeug.utils import secure_filename
 
-
-# Crear blueprint para 'lector'
 lector_bp = Blueprint('lector', __name__, url_prefix='/lector')
 
+
+# =======================================================
+#   INICIO
+# =======================================================
 @lector_bp.route('/')
 def inicio():
     return redirect(url_for('lector.dashboard'))
 
-# Ruta de inicio para el lector
+
+# =======================================================
+#   DOCUMENTOS – LISTA GENERAL
+#   SOLO PROYECTOS DE LA EMPRESA
+# =======================================================
 @lector_bp.route('/documentos')
+@login_required
 def lector_documentos():
-    projects = Project.query.all()  
+
+    projects = (
+        Project.query
+        .join(AdminUser, Project.creator_id == AdminUser.id)
+        .filter(AdminUser.empresa_id == current_user.empresa_id)
+        .all()
+    )
+
     return render_template('lector/inicio.html', projects=projects)
 
 
-
-# Ruta para ver los documentos del proyecto
+# =======================================================
+#   VER DOCUMENTOS DEL PROYECTO (solo empresa del usuario)
+# =======================================================
 @lector_bp.route('/project/<int:project_id>/documents', methods=['GET', 'POST'])
 @login_required
 def view_documents(project_id):
+
     project = Project.query.get_or_404(project_id)
+
+    # ❗ Validación multiempresa
+    if project.creator.empresa_id != current_user.empresa_id:
+        abort(403)
 
     documents = ProjectDocument.query.filter_by(project_id=project.id).all()
 
@@ -59,13 +78,25 @@ def view_documents(project_id):
     return render_template('lector/documentos.html', project=project, documents=documents)
 
 
-# Ruta para el dashboard del lector
+# =======================================================
+#   DASHBOARD DEL LECTOR — SOLO PROYECTOS DE SU EMPRESA
+# =======================================================
 @lector_bp.route('/dashboard')
 @login_required
 def dashboard():
-    proyectos = Project.query.filter_by(archived=False).all()
 
-    # Subquery para obtener la FECHA más reciente de avance por proyecto
+    # Filtrar proyectos por empresa
+    proyectos = (
+        Project.query
+        .join(AdminUser, Project.creator_id == AdminUser.id)
+        .filter(
+            AdminUser.empresa_id == current_user.empresa_id,
+            Project.archived == False
+        )
+        .all()
+    )
+
+    # Subquery para obtener la fecha más reciente de avance
     sub = (
         db.session.query(
             ProjectProgress.project_id,
@@ -75,7 +106,6 @@ def dashboard():
         .subquery()
     )
 
-    # Avance más reciente por proyecto
     ultimos_avances = (
         db.session.query(ProjectProgress)
         .join(
@@ -87,9 +117,10 @@ def dashboard():
         )
         .all()
     )
+
     ultimo_por_proyecto = {a.project_id: a for a in ultimos_avances}
 
-    # Obtener los 3 avances más recientes por proyecto
+    # 3 avances recientes por proyecto
     recientes_por_proyecto = {}
     for p in proyectos:
         recent = (
@@ -101,7 +132,7 @@ def dashboard():
         )
         recientes_por_proyecto[p.id] = recent
 
-    # Construir resumenes para el dashboard
+    # Construcción de tarjetas del dashboard
     resumenes = []
     for p in proyectos:
         ultimo = ultimo_por_proyecto.get(p.id)
@@ -109,13 +140,13 @@ def dashboard():
             "id": p.id,
             "nombre": p.name,
             "estado": p.status.capitalize(),
-            "progreso_pct": p.progress or 0,               
-            "presupuesto": p.total_budget or 0,           
+            "progreso_pct": p.progress or 0,
+            "presupuesto": p.total_budget or 0,
             "cronograma_file": p.schedule_file,
             "presupuesto_file": p.budget_file,
             "ultimo_avance_desc": ultimo.description if ultimo else "Sin avances",
             "ultimo_avance_fecha": ultimo.date if ultimo else None,
-            "recientes": recientes_por_proyecto.get(p.id, []),  
+            "recientes": recientes_por_proyecto.get(p.id, []),
         })
 
     return render_template('lector/dashboard.html', resumenes=resumenes)

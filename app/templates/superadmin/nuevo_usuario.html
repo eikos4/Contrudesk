@@ -1,0 +1,71 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<div class="min-h-screen bg-gray-100 py-8">
+  <div class="max-w-xl mx-auto px-4">
+
+    <!-- Header -->
+    <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
+      <h1 class="text-2xl font-bold text-slate-900">Crear Nuevo Usuario</h1>
+      <p class="text-sm text-slate-600">Agrega un nuevo usuario para tu empresa</p>
+    </div>
+
+    <!-- Formulario -->
+    <div class="bg-white rounded-2xl shadow-lg p-6">
+      <form action="" method="POST" class="space-y-6">
+
+        <!-- Nombre -->
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Nombre completo</label>
+          <input type="text" name="nombre" required
+            class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-600 outline-none">
+        </div>
+
+        <!-- Email -->
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Correo electrónico</label>
+          <input type="email" name="email" required
+            class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-600 outline-none">
+        </div>
+
+        <!-- Rol -->
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Rol del usuario</label>
+          <select name="rol_id" required
+                  class="w-full px-4 py-2 border rounded-lg bg-white focus:ring-2 focus:ring-blue-600 outline-none">
+            <option value="" disabled selected>Seleccione un rol</option>
+            {% for rol in roles %}
+              <option value="{{ rol.id }}">{{ rol.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Empresa (solo lectura, auto-asignada) -->
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Empresa asignada</label>
+          <input type="text"
+                 value="{{ current_user.empresa.nombre }}"
+                 class="w-full px-4 py-2 border rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
+                 disabled>
+        </div>
+
+        <!-- Botones -->
+        <div class="flex justify-between items-center pt-4">
+          <a href="{{ url_for('superadmin.usuarios') }}"
+             class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg">
+            Volver
+          </a>
+
+          <button type="submit"
+                  class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow">
+            Crear Usuario
+          </button>
+        </div>
+
+      </form>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
