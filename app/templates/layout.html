@@ -6,7 +6,7 @@
 
   <!-- TÍTULO DINÁMICO -->
   <title>
-    {{ global_config.system_name if global_config else "Kodesk Admin" }}
+    {{ global_config.system_name if global_config else "ConstruDesk" }}
   </title>
 
   <script src="https://cdn.tailwindcss.com"></script>
@@ -45,6 +45,9 @@
       background-color: var(--color-primary) !important;
     }
   </style>
+  
+  <!-- CSS adicional para templates específicos -->
+  {% block extra_css %}{% endblock %}
 </head>
 
 <body class="min-h-screen flex flex-col">
@@ -59,7 +62,7 @@
             <span class="text-white font-bold text-lg">C</span>
           </div>
           <span class="text-xl font-bold text-white hidden sm:inline">
-            {{ global_config.system_name if global_config else "Kodesk Admin" }}
+            {{ global_config.system_name if global_config else "ConstruDesk" }}
           </span>
         </a>
         

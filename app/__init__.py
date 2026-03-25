@@ -32,6 +32,7 @@ def create_app():
     from app.routes.auth import auth_bp
     from app.routes.mensajes import mensajero_bp
     from app.routes.superadmin import superadmin_bp    
+    from app.routes.timeline import timeline_bp    
 
 
 
@@ -45,6 +46,7 @@ def create_app():
     app.register_blueprint(auth_bp)
     app.register_blueprint(mensajero_bp)
     app.register_blueprint(superadmin_bp)
+    app.register_blueprint(timeline_bp)
     
 
 
