@@ -171,7 +171,7 @@ def project_timeline(project_id):
             'description': task.description,
             'status': task.status,
             'responsible': task.responsible_user.nombre if task.responsible_user else 'Sin asignar',
-            'user': task.creator.nombre if task.creator else 'Sistema'
+            'user': task.responsible_user.nombre if task.responsible_user else 'Sistema'
         }, user_role))
         
         # Evento de actualización (si es diferente de la creación)
@@ -181,7 +181,7 @@ def project_timeline(project_id):
                 'timestamp': task.updated_at,
                 'name': task.name,
                 'status': task.status,
-                'user': task.last_updated_by.nombre if task.last_updated_by else 'Sistema'
+                'user': task.responsible_user.nombre if task.responsible_user else 'Sistema'
             }, user_role))
     
     # 2. Avances de obra
