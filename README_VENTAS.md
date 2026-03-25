@@ -24,7 +24,7 @@
 | **LECTOR** | patricia.vargas@horizon.cl | demo123 | Solo consulta |
 | **INVITADO** | diego.fuentes@horizon.cl | demo123 | Acceso limitado |
 
-**🌐 URL de Acceso:** `http://localhost:5000`
+**🌐 URL de Acceso:** `http://www.construdesk.cl`
 
 ---
 
