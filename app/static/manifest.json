@@ -1,0 +1,32 @@
+{
+  "name": "ConstruDesk - Control de Obras",
+  "short_name": "ConstruDesk",
+  "description": "Plataforma integral de gestión de proyectos de construcción",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1e293b",
+  "theme_color": "#1e3a8a",
+  "orientation": "any",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/static/favicon/favicon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/favicon/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/favicon/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "lang": "es",
+  "dir": "ltr"
+}

@@ -1,8 +1,29 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, send_from_directory, current_app
 from .forms import ContactoForm
 from .models import db, ContactMessage
+import os
 
 main = Blueprint("main", __name__)
+
+
+@main.route("/sw.js")
+def service_worker():
+    """Serve service worker from root for full scope."""
+    return send_from_directory(
+        os.path.join(current_app.root_path, 'static'),
+        'sw.js',
+        mimetype='application/javascript'
+    )
+
+
+@main.route("/manifest.json")
+def manifest():
+    """Serve manifest from root for PWA."""
+    return send_from_directory(
+        os.path.join(current_app.root_path, 'static'),
+        'manifest.json',
+        mimetype='application/manifest+json'
+    )
 
 
 @main.route("/", methods=["GET"])
