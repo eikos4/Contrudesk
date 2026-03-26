@@ -20,21 +20,21 @@ ROLES_ESTANDAR: List[str] = [
 # Datos de las 2 empresas a crear.
 EMPRESAS_DATA: List[Dict[str, str]] = [
     {
-        "nombre": "Horizon Services Integrales",
-        "rut": "66.666.666-6",
+        "nombre": "ConstruDESK",
+        "rut": "71.123.345-6",
         "direccion": "Parral, Chile",
         "telefono": "+56 9 8888 8888",
-        "email": "serviciointegraleshorizon@gmail.com",
-        "admin_email": "admin_horizon@test.cl", # 🆕 Credencial de Admin de Prueba
-        "admin_nombre": "Admin Horizon"         # 🆕 Nombre de Admin de Prueba
+        "email": "construdesk@kodesk.cl",
+        "admin_email": "construdesk@kodesk.cl", # 🆕 Credencial de Admin de Prueba
+        "admin_nombre": "Admin ConstruDESK"         # 🆕 Nombre de Admin de Prueba
     },
     {
-        "nombre": "Construdesk ventas",
+        "nombre": "Malpo",
         "rut": "77.777.777-7",
         "direccion": "Santiago, Chile",
         "telefono": "+56 9 9999 9999",
-        "email": "contacto@constructorabeta.cl",
-        "admin_email": "admin_beta@test.cl",    # 🆕 Credencial de Admin de Prueba
+        "email": "malpo@gmail.com",
+        "admin_email": "malpo@gmail.coml",    # 🆕 Credencial de Admin de Prueba
         "admin_nombre": "Admin Beta"            # 🆕 Nombre de Admin de Prueba
     }
 ]

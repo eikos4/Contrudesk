@@ -34,43 +34,43 @@ PROYECTO_DEMO = {
 USUARIOS_DEMO = [
     {
         "nombre": "Carlos Silva",
-        "email": "carlos.silva@horizon.cl",
+        "email": "carlos.silva@construdesk.cl",
         "rol": "admin",
         "password": "demo123"
     },
     {
         "nombre": "María González",
-        "email": "maria.gonzalez@horizon.cl", 
+        "email": "maria.gonzalez@construdesk.cl", 
         "rol": "editor",
         "password": "demo123"
     },
     {
         "nombre": "Roberto Méndez",
-        "email": "roberto.mendez@horizon.cl",
+        "email": "roberto.mendez@construdesk.cl",
         "rol": "editor", 
         "password": "demo123"
     },
     {
         "nombre": "Ana Castillo",
-        "email": "ana.castillo@horizon.cl",
+        "email": "ana.castillo@construdesk.cl",
         "rol": "miembro",
         "password": "demo123"
     },
     {
         "nombre": "Luis Torres",
-        "email": "luis.torres@horizon.cl",
+        "email": "luis.torres@construdesk.cl",
         "rol": "miembro",
         "password": "demo123"
     },
     {
         "nombre": "Patricia Vargas",
-        "email": "patricia.vargas@horizon.cl",
+        "email": "patricia.vargas@construdesk.cl",
         "rol": "lector",
         "password": "demo123"
     },
     {
         "nombre": "Diego Fuentes",
-        "email": "diego.fuentes@horizon.cl",
+        "email": "diego.fuentes@construdesk.cl",
         "rol": "invitado",
         "password": "demo123"
     }
@@ -504,8 +504,8 @@ def crear_demo_completa():
         print("🏗️ CREANDO DATOS DE DEMOSTRACIÓN COMPLETOS")
         print("=" * 50)
         
-        # 1. Obtener empresa Horizon Services
-        empresa = Empresa.query.filter_by(nombre="Horizon Services Integrales").first()
+        # 1. Obtener empresa ConstruDESK
+        empresa = Empresa.query.filter_by(nombre="ConstruDESK").first()
         if not empresa:
             print("❌ Error: Debes ejecutar primero 'python users_initial.py' para crear la empresa base")
             return

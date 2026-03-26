@@ -15,16 +15,24 @@
 
 | PERFIL | USUARIO | CONTRASEÑA | ACCESO |
 |--------|---------|------------|--------|
-| **SUPERADMIN** | carlos.silva@horizon.cl | demo123 | Control total del sistema |
-| **ADMIN** | carlos.silva@horizon.cl | demo123 | Gestión de proyectos y equipos |
-| **EDITOR** | maria.gonzalez@horizon.cl | demo123 | Operaciones técnicas |
-| **EDITOR** | roberto.mendez@horizon.cl | demo123 | Operaciones técnicas |
-| **MIEMBRO** | ana.castillo@horizon.cl | demo123 | Ejecución de tareas |
-| **MIEMBRO** | luis.torres@horizon.cl | demo123 | Ejecución de tareas |
-| **LECTOR** | patricia.vargas@horizon.cl | demo123 | Solo consulta |
-| **INVITADO** | diego.fuentes@horizon.cl | demo123 | Acceso limitado |
+| **SUPERADMIN** | carlos.silva@construdesk.cl | demo123 | Control total del sistema |
+| **ADMIN** | carlos.silva@construdesk.cl | demo123 | Gestión de proyectos y equipos |
+| **EDITOR** | maria.gonzalez@construdesk.cl | demo123 | Operaciones técnicas |
+| **EDITOR** | roberto.mendez@construdesk.cl | demo123 | Operaciones técnicas |
+| **MIEMBRO** | ana.castillo@construdesk.cl | demo123 | Ejecución de tareas |
+| **MIEMBRO** | luis.torres@construdesk.cl | demo123 | Ejecución de tareas |
+| **LECTOR** | patricia.vargas@construdesk.cl | demo123 | Solo consulta |
+| **INVITADO** | diego.fuentes@construdesk.cl | demo123 | Acceso limitado |
 
 **🌐 URL de Acceso:** `http://www.construdesk.cl`
+
+### 🏢 Credenciales Empresa Malpo
+
+| PERFIL | USUARIO | CONTRASEÑA | ACCESO |
+|--------|---------|------------|--------|
+| **ADMIN** | malpo@gmail.com | admin123G | Administración de Malpo |
+
+> ⚠️ La empresa Malpo no tiene datos demo cargados. Es una empresa limpia para demostrar el proceso de creación desde cero.
 
 ---
 
@@ -133,30 +141,30 @@
 ## 🚀 Demostración Guiada
 
 ### 📋 Paso 1: Inicio como SUPERADMIN
-1. **Accede:** `carlos.silva@horizon.cl` / `demo123`
+1. **Accede:** `carlos.silva@construdesk.cl` / `demo123`
 2. **Explora:** Dashboard global con KPIs de todas las empresas
 3. **Observa:** Control de usuarios, configuración del sistema
 
 ### 📋 Paso 2: Gestión como ADMIN
-1. **Accede:** `carlos.silva@horizon.cl` / `demo123`
+1. **Accede:** `carlos.silva@construdesk.cl` / `demo123`
 2. **Explora:** Dashboard de control de proyectos
 3. **Crea:** Nuevo proyecto o gestiona existentes
 4. **Asigna:** Usuarios a roles específicos
 
 ### 📋 Paso 3: Operaciones como EDITOR
-1. **Accede:** `maria.gonzalez@horizon.cl` / `demo123`
+1. **Accede:** `maria.gonzalez@construdesk.cl` / `demo123`
 2. **Explora:** Proyectos asignados y tareas
 3. **Crea:** Reportes técnicos y documentos
 4. **Gestiona:** Avances y checklist de calidad
 
 ### 📋 Paso 4: Ejecución como MIEMBRO
-1. **Accede:** `ana.castillo@horizon.cl` / `demo123`
+1. **Accede:** `ana.castillo@construdesk.cl` / `demo123`
 2. **Explora:** Tareas asignadas personalmente
 3. **Actualiza:** Estados y avances de trabajo
 4. **Reporta:** Incidentes y condiciones de seguridad
 
 ### 📋 Paso 5: Consulta como LECTOR
-1. **Accede:** `patricia.vargas@horizon.cl` / `demo123`
+1. **Accede:** `patricia.vargas@construdesk.cl` / `demo123`
 2. **Explora:** Proyectos con permiso de visualización
 3. **Consulta:** Documentos y reportes técnicos
 4. **Observa:** Solo lectura, sin modificaciones
